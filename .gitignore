@@ -1,0 +1,310 @@
+# ============================================
+# eCommerce Smart DSS - Git Ignore
+# ============================================
+
+# ─── Python ─────────────────────────────────
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Distribution / packaging
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# ─── Node.js / Next.js ──────────────────────
+# Dependencies
+node_modules/
+frontend/node_modules/
+
+# Next.js build output
+.next/
+frontend/.next/
+out/
+frontend/out/
+
+# Production build
+frontend/build/
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Turbopack cache
+frontend/.turbopack/
+
+# Next.js cache
+.next/cache/
+
+
+# SQLite databases
+*.db
+*.sqlite
+*.sqlite3
+ecommerce_dss.db
+
+# Database backups
+*.db.backup
+*.sql.backup
+
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+frontend/.env.local
+frontend/.env
+
+# ─── IDE / Editor ───────────────────────────
+# VSCode
+.vscode/
+*.code-workspace
+
+# PyCharm / IntelliJ
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+.\#*
+
+# ─── Operating System ───────────────────────
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+.directory
+.Trash-*
+
+# ─── Logs ───────────────────────────────────
+# Log files
+*.log
+logs/
+*.log.*
+/tmp/
+temp/
+
+# FastAPI / Uvicorn logs
+uvicorn.log
+fastapi.log
+
+# Next.js logs
+frontend/.next/dev/logs/
+
+# ─── Temporary Files ────────────────────────
+# Temp directories
+tmp/
+temp/
+.tmp/
+.temp/
+
+# Benchmark outputs
+benchmark_output/
+*.benchmark
+
+# ─── AI Documentation (Agent Files) ─────────
+# AI-specific documentation files for development context
+# These files reduce token usage when working with AI assistants
+# Auto-generated and frequently updated - should not be committed
+
+# Core context files
+CLAUDE.md
+BACKEND_CONTEXT.md
+FRONTEND_CONTEXT.md
+PROJECT_STRUCTURE.md
+
+# Dataset documentation
+DATASETS_ANALYSIS.md
+data/DATASET_USAGE_GUIDE.md
+
+# API & technical references
+API_REFERENCE.md
+TECHNICAL_DOCUMENTATION.md
+
+# Old integration documentation (if any remain)
+INTEGRATION_*.md
+REBUILD_*.md
+START_HERE.md
+QUICK_START.md
+PROJECT_DOCS.md
+TEST_*.md
+*_SUMMARY.txt
+prompt.md
+
+# Agent checkpoint/session files
+.copilot/
+.cursor/
+
+# GitHub Copilot instructions
+.github/
+.github/copilot-instructions.md
+.github/appmod/
+
+# Dataset files - ignore all CSV and Excel files in data folder
+data/**/*.csv
+data/**/*.xlsx
+data/**/*.xls
+data/**/*.txt
+
+# Specific dataset folders
+data/india/
+data/uk/
+data/electronics/
+data/FMCG/
+data/Retail/
+data/favorita/
+data/chung chung/
+
+# Processed/cached data
+data/processed/
+data/cache/
+*.pkl
+*.pickle
+
+# ─── Alembic (Database Migrations) ──────────
+alembic/__pycache__/
+alembic/versions/__pycache__/
+
+
+# ─── Miscellaneous ──────────────────────────
+# Compiled source
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+
+# Archives
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+
+# System files
+.Spotlight-V100
+.Trashes
+
+# ─── Project Specific ───────────────────────
+# Seed data script output
+seed_output/
+
+# Model checkpoints (if storing ML models)
+models/checkpoints/
+*.h5
+*.pkl
+*.joblib
+
+# Prophet model cache
+prophet_cache/
+
+# XGBoost model files
+*.model
+*.bst
+
+# ============================================
+# End of .gitignore
+# ============================================

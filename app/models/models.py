@@ -1,7 +1,8 @@
 """
 SQLAlchemy ORM Models
 Tables: users, categories, products, inventory, inventory_transactions,
-        sales_history, suppliers, product_suppliers, dss_reports
+        sales_history, suppliers, product_suppliers, dss_reports,
+        forecast_cache, backtest_results
 """
 
 from datetime import datetime, date
@@ -253,4 +254,63 @@ class DSSReport(Base):
 
     __table_args__ = (
         Index("idx_dss_product_time", "product_id", "generated_at"),
+    )
+
+
+class ForecastCache(Base):
+    __tablename__ = "forecast_cache"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    product_id = Column(Integer, ForeignKey("products.id"), nullable=False, index=True)
+    forecast_date = Column(Date, nullable=False, index=True)
+    yhat = Column(Float, nullable=False)
+    yhat_lower = Column(Float, nullable=False)
+    yhat_upper = Column(Float, nullable=False)
+    model_version = Column(String(50), nullable=False, default="hybrid_asym_v1")
+    computed_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    product = relationship("Product")
+
+    __table_args__ = (
+        Index("idx_fc_product_date", "product_id", "forecast_date"),
+        Index("idx_fc_product_version", "product_id", "model_version"),
+    )
+
+
+class BacktestResult(Base):
+    __tablename__ = "backtest_results"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    product_id = Column(Integer, ForeignKey("products.id"), nullable=False, index=True)
+    model_version = Column(String(50), nullable=False, default="hybrid_asym_v1")
+
+    test_start_date = Column(Date, nullable=False)
+    test_end_date = Column(Date, nullable=False)
+    n_test_days = Column(Integer, nullable=False)
+
+    mae = Column(Float, nullable=False)
+    rmse = Column(Float, nullable=False)
+    mape = Column(Float, nullable=True)
+    under_forecast_pct = Column(Float, nullable=False)
+    over_forecast_pct = Column(Float, nullable=False)
+
+    dss_service_level = Column(Float, nullable=False)
+    dss_stockout_days = Column(Integer, nullable=False)
+    dss_avg_inventory = Column(Float, nullable=False)
+
+    naive_service_level = Column(Float, nullable=False)
+    naive_stockout_days = Column(Integer, nullable=False)
+    naive_avg_inventory = Column(Float, nullable=False)
+
+    oracle_service_level = Column(Float, nullable=False)
+    oracle_stockout_days = Column(Integer, nullable=False)
+    oracle_avg_inventory = Column(Float, nullable=False)
+
+    computed_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    product = relationship("Product")
+
+    __table_args__ = (
+        Index("idx_br_product_version", "product_id", "model_version"),
+        Index("idx_br_version", "model_version"),
     )

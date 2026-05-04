@@ -20,6 +20,8 @@ Models:
 - Notification : System notifications
 - NotificationType : Enum for notification types (stockout, low_stock, reorder, price_change, forecast_ready)
 - DSSReport : Generated DSS analysis reports
+- ForecastCache : Cached future forecast rows per product/version
+- BacktestResult : Cached per-product backtest metrics per model version
 
 Database: SQLite (ecommerce_dss.db)
 ORM: SQLAlchemy 2.0+
@@ -35,6 +37,8 @@ from app.models.models import (
     Supplier, ProductSupplier,
     Notification, NotificationType,
     DSSReport,
+    ForecastCache,
+    BacktestResult,
 )
 
 __all__ = [
@@ -54,6 +58,8 @@ __all__ = [
     
     # Sales & forecasting
     "SalesHistory",
+    "ForecastCache",
+    "BacktestResult",
     
     # Supply chain
     "Supplier", 
@@ -64,4 +70,3 @@ __all__ = [
     "NotificationType",
     "DSSReport",
 ]
-

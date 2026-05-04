@@ -10,6 +10,7 @@ const NAV_LINKS = [
   { href: '/products',  label: 'Products',    icon: '📦' },
   { href: '/inventory', label: 'Inventory',   icon: '📋' },
   { href: '/dss',       label: 'DSS Analysis',icon: '🎯' },
+  { href: '/statistics',label: 'Statistics',  icon: '📈' },
 ];
 
 const NOTIF_ICON = {

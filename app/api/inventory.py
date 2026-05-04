@@ -3,6 +3,7 @@ Inventory API — stock-in, stock-out, transaction history, low-stock alerts.
 """
 
 from datetime import datetime, timedelta, date as date_type
+from decimal import Decimal
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
@@ -112,10 +113,10 @@ def stock_out(data: StockOutRequest, db: Session = Depends(get_db)):
     inv.current_stock -= data.quantity
 
     # Resolve effective unit price: use provided value, fall back to product's current_price for sales
-    effective_price = data.unit_price
+    effective_price = Decimal(str(data.unit_price)) if data.unit_price is not None else None
     if reason in SALE_REASONS and effective_price is None:
         product = db.query(Product).filter(Product.id == data.product_id).first()
-        effective_price = float(product.current_price) if product and product.current_price else None
+        effective_price = Decimal(str(product.current_price)) if product and product.current_price is not None else None
 
     txn = InventoryTransaction(
         product_id=data.product_id,
@@ -131,7 +132,7 @@ def stock_out(data: StockOutRequest, db: Session = Depends(get_db)):
     # Auto-create / upsert SalesHistory for SALE and WHOLESALE
     if reason in SALE_REASONS:
         today = date_type.today()
-        revenue = (effective_price or 0) * data.quantity
+        revenue = (effective_price or Decimal("0")) * Decimal(data.quantity)
 
         # Upsert: merge into existing manual record for the same product+date.
         # Records with import_batch set are from CSV imports — never merge those.
@@ -143,7 +144,7 @@ def stock_out(data: StockOutRequest, db: Session = Depends(get_db)):
 
         if existing:
             existing.quantity_sold += data.quantity
-            existing.revenue += revenue
+            existing.revenue = (existing.revenue or Decimal("0")) + revenue
         else:
             db.add(SalesHistory(
                 product_id=data.product_id,

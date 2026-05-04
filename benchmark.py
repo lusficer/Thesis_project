@@ -64,17 +64,21 @@ def load_datasets():
         df_list = pd.read_csv('data/india/List_of_Orders.csv', encoding='ISO-8859-1')
         df_details = pd.read_csv('data/india/Order_Details.csv', encoding='ISO-8859-1')
         if {'Order ID', 'Order Date'}.issubset(df_list.columns) and \
-           {'Order ID', 'Sub-Category', 'Amount', 'Quantity'}.issubset(df_details.columns):
+        {'Order ID', 'Sub-Category', 'Amount', 'Quantity'}.issubset(df_details.columns):
             merged = pd.merge(df_list, df_details, on='Order ID', how='inner')
-            df_clean = clean_ecommerce_data(merged, {
-                'date_col': 'Order Date', 'pid_col': 'Sub-Category',
-                'qty_col': 'Quantity', 'name_col': 'Sub-Category'
-            })
+            merged['Order Date'] = pd.to_datetime(merged['Order Date'], dayfirst=True)
+            # Bypass clean_ecommerce_data — build unified schema directly
+            df_clean = pd.DataFrame({
+                'order_purchase_timestamp': merged['Order Date'],
+                'product_id': merged['Sub-Category'],
+                'quantity': merged['Quantity'],
+                'product_name': merged['Sub-Category']
+            }).dropna(subset=['order_purchase_timestamp', 'product_id', 'quantity'])
+            df_clean['quantity'] = df_clean['quantity'].clip(lower=0)
             datasets['India Sales'] = df_clean
-            print(f"  ✅ India Sales: {len(df_clean)} rows")
+            print(f"  ✅ India Sales: {len(df_clean)} rows ({df_clean['product_id'].nunique()} categories)")
     except FileNotFoundError:
-        print("  ⚠️ India Sales not found (expected: data/india/List_of_Orders.csv + Order_Details.csv)")
-
+        print("  ⚠️ India Sales not found")
     # ── Dataset 2: UK Retail ──
     try:
         for path in ['data/uk/online_retail_II.csv', 'data/uk/OnlineRetail.csv', 'data/uk/data.csv', 'data/uk_retail.csv']:
@@ -82,7 +86,7 @@ def load_datasets():
                 df = pd.read_csv(path, encoding='ISO-8859-1')
                 # Format A: InvoiceNo, StockCode, Description, UnitPrice
                 if {'InvoiceNo', 'StockCode', 'Description', 'UnitPrice'}.issubset(df.columns):
-                    df_clean = clean_ecommerce_data(df, {
+                    df_clean, *_ = clean_ecommerce_data(df, {
                         'date_col': 'InvoiceDate', 'pid_col': 'StockCode',
                         'qty_col': 'Quantity', 'name_col': 'Description'
                     })
@@ -90,7 +94,7 @@ def load_datasets():
                     print(f"  ✅ UK Retail: {len(df_clean)} rows")
                 # Format B: Invoice, StockCode, Description, Price (online_retail_II)
                 elif {'Invoice', 'StockCode', 'Description', 'Price'}.issubset(df.columns):
-                    df_clean = clean_ecommerce_data(df, {
+                    df_clean, *_ = clean_ecommerce_data(df, {
                         'date_col': 'InvoiceDate', 'pid_col': 'StockCode',
                         'qty_col': 'Quantity', 'name_col': 'Description'
                     })
@@ -106,7 +110,7 @@ def load_datasets():
             if os.path.exists(path):
                 df = pd.read_csv(path, encoding='ISO-8859-1')
                 if {'Order Date', 'Product', 'Price Each'}.issubset(df.columns):
-                    df_clean = clean_ecommerce_data(df, {
+                    df_clean, *_ = clean_ecommerce_data(df, {
                         'date_col': 'Order Date', 'pid_col': 'Product',
                         'qty_col': 'Quantity Ordered', 'name_col': 'Product'
                     })
@@ -128,7 +132,7 @@ def load_datasets():
                 merged = pd.merge(merged, df_prd, on='product_id', how='left')
             if 'quantity' not in merged.columns:
                 merged['quantity'] = 1
-            df_clean = clean_ecommerce_data(merged, {
+            df_clean, *_ = clean_ecommerce_data(merged, {
                 'date_col': 'order_purchase_timestamp', 'pid_col': 'product_id',
                 'qty_col': 'quantity', 'name_col': 'product_category_name'
             })
@@ -158,7 +162,7 @@ def load_datasets():
                     df['Product'] = df['Product'].str.strip()
                     # Each exploded row = 1 unit of that product
                     df['Quantity'] = 1
-                    df_clean = clean_ecommerce_data(df, {
+                    df_clean, *_ = clean_ecommerce_data(df, {
                         'date_col': 'Date', 'pid_col': 'Product',
                         'qty_col': 'Quantity', 'name_col': 'Product'
                     })
@@ -171,23 +175,29 @@ def load_datasets():
     # ── Dataset 6: FMCG Product Sales 2023-2024 (Kaggle - yashyennewar) ──
     # Date format: MM-DD-YY (e.g., 08-23-23)
     # Column names have trailing spaces: " Unit_Price ", " Revenue ", " Profit "
+    # ── Dataset 6: FMCG Product Sales 2023-2024 ──
     try:
         for path in ['data/FMCG/product_sales_dataset_final.csv',
-                      'data/fmcg/product_sales.csv',
-                      'data/product_sales_2023/product_sales.csv']:
+                    'data/fmcg/product_sales.csv',
+                    'data/product_sales_2023/product_sales.csv']:
             if os.path.exists(path):
                 df = pd.read_csv(path)
-                # Strip whitespace from column names
                 df.columns = df.columns.str.strip()
                 if 'Order_Date' in df.columns and 'Product_Name' in df.columns:
-                    # Fix date format: MM-DD-YY → proper datetime
                     df['Order_Date'] = pd.to_datetime(df['Order_Date'], format='%m-%d-%y', errors='coerce')
-                    df_clean = clean_ecommerce_data(df, {
-                        'date_col': 'Order_Date', 'pid_col': 'Sub_Category',
-                        'qty_col': 'Quantity', 'name_col': 'Product_Name'
-                    })
+                    # Aggregate by Sub_Category (thesis evaluates 5 sub-categories, not 49 products)
+                    df_agg = df.groupby(['Order_Date', 'Sub_Category']).agg(
+                        Quantity=('Quantity', 'sum')
+                    ).reset_index()
+                    df_clean = pd.DataFrame({
+                        'order_purchase_timestamp': df_agg['Order_Date'],
+                        'product_id': df_agg['Sub_Category'],
+                        'quantity': df_agg['Quantity'],
+                        'product_name': df_agg['Sub_Category']
+                    }).dropna(subset=['order_purchase_timestamp', 'product_id', 'quantity'])
+                    df_clean['quantity'] = df_clean['quantity'].clip(lower=0)
                     datasets['FMCG Sales 2023-24'] = df_clean
-                    print(f"  ✅ FMCG Sales 2023-24: {len(df_clean)} rows ({df_clean['product_id'].nunique()} products)")
+                    print(f"  ✅ FMCG Sales 2023-24: {len(df_clean)} rows ({df_clean['product_id'].nunique()} sub-categories)")
                 break
     except Exception as e:
         print(f"  ⚠️ FMCG Sales 2023-24 error: {e}")
@@ -207,7 +217,7 @@ def load_datasets():
                     ).reset_index()
                     df_agg['Quantity'] = df_agg['sales'].clip(lower=0).astype(int)
                     df_agg = df_agg[df_agg['Quantity'] > 0]
-                    df_clean = clean_ecommerce_data(df_agg, {
+                    df_clean, *_ = clean_ecommerce_data(df_agg, {
                         'date_col': 'date', 'pid_col': 'family',
                         'qty_col': 'Quantity', 'name_col': 'family'
                     })
@@ -482,7 +492,9 @@ def run_benchmark():
         print(f"\n{'─' * 60}")
         print(f"  Dataset: {ds_name}")
         print(f"{'─' * 60}")
-        
+        if df_clean is None or len(df_clean) == 0:
+            print(f"  ⚠️ Skipping {ds_name}: empty after preprocessing")
+            continue
         products = select_products(df_clean, top_n=5)
         print(f"  Selected {len(products)} products: {products[:3]}{'...' if len(products) > 3 else ''}")
         

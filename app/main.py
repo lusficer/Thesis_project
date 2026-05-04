@@ -6,16 +6,19 @@ Combines existing DSS engine with new product management APIs.
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
 
-from app.database import engine, Base
 from app.api import products, inventory, sales, dashboard, dss, auth, notifications
+
+load_dotenv()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Create all tables on startup (for development)
-    # In production, use Alembic migrations instead
-    Base.metadata.create_all(bind=engine)
+    # Schema is managed by Alembic — run `alembic upgrade head`
+    # before starting uvicorn. This lifespan intentionally does
+    # NOT call Base.metadata.create_all() to avoid conflicts
+    # between auto-created tables and Alembic migrations.
     yield
 
 

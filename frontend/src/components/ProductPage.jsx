@@ -119,16 +119,45 @@ export default function ProductsPage() {
     setNewCategoryName("");
     setShowModal(true);
   };
-  const openEdit = (p) => {
+
+  const toViewProduct = (source, detail) => {
+    const merged = detail ? { ...source, ...detail } : source;
+    const categoryId = merged?.category_id ?? merged?.category?.id ?? null;
+    const categoryFromList = categoryId != null
+      ? categories.find(c => String(c.id) === String(categoryId))?.name
+      : null;
+    const categoryName = merged?.category_name ?? merged?.category?.name ?? categoryFromList ?? null;
+    return { ...merged, category_id: categoryId, category_name: categoryName };
+  };
+
+  const openEdit = async (p) => {
+    let full = p;
+    try {
+      const res = await productsAPI.get(p.id);
+      full = toViewProduct(p, res?.data);
+    } catch (error) {
+      showNotif(error?.response?.data?.detail || "Failed to load product details", "error");
+      return;
+    }
+
     setForm({
-      sku: p.sku, name: p.name, description: p.description || "",
-      category_id: p.category_id != null ? String(p.category_id) : "", base_price: String(p.base_price),
-      cost_price: String(p.cost_price || ""), current_price: String(p.current_price),
-      initial_stock: String(p.current_stock), image_url: p.image_url || "",
+      sku: full.sku, name: full.name, description: full.description || "",
+      category_id: full.category_id != null ? String(full.category_id) : "", base_price: String(full.base_price),
+      cost_price: String(full.cost_price || ""), current_price: String(full.current_price),
+      initial_stock: String(full.current_stock), image_url: full.image_url || "",
     });
     setNewCategoryName("");
-    setEditingProduct(p);
+    setEditingProduct(full);
     setShowModal(true);
+  };
+
+  const openView = async (p) => {
+    try {
+      const res = await productsAPI.get(p.id);
+      setViewProduct(toViewProduct(p, res?.data));
+    } catch {
+      setViewProduct(toViewProduct(p));
+    }
   };
 
   const handleCreateCategory = async () => {
@@ -178,6 +207,26 @@ export default function ProductsPage() {
       showNotif(error?.response?.data?.detail || "Failed to create category", "error");
     } finally {
       setCreatingQuickCategory(false);
+    }
+  };
+
+  const handleDeleteCategory = async (categoryId) => {
+    if (!categoryId) return;
+    const cat = categories.find(c => String(c.id) === String(categoryId));
+    const label = cat?.name || `#${categoryId}`;
+    if (!window.confirm(`Delete category "${label}"? Products in this category will become uncategorized.`)) {
+      return;
+    }
+
+    try {
+      await productsAPI.deleteCategory(Number(categoryId));
+      if (String(catFilter) === String(categoryId)) setCatFilter("");
+      if (String(form.category_id) === String(categoryId)) updateField("category_id", "");
+      await loadCategories();
+      await loadProducts();
+      showNotif(`Category "${label}" deleted`);
+    } catch (error) {
+      showNotif(error?.response?.data?.detail || "Failed to delete category", "error");
     }
   };
 
@@ -311,6 +360,9 @@ export default function ProductsPage() {
     const p = viewProduct;
     const s = statusCfg[p.stock_status];
     const margin = p.cost_price ? ((p.current_price - p.cost_price) / p.current_price * 100).toFixed(1) : null;
+    const categoryName = p.category_name
+      || (p.category_id != null ? categories.find(c => String(c.id) === String(p.category_id))?.name : null)
+      || "Uncategorized";
     return (
       <div style={styles.page}>
         <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -361,7 +413,7 @@ export default function ProductsPage() {
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", background: "#f8fafc", borderRadius: 10 }}>
                   <span style={{ fontSize: 13, color: "#64748b" }}>Category</span>
-                  <span style={{ fontSize: 14, fontWeight: 500 }}>{p.category_name || "Uncategorized"}</span>
+                  <span style={{ fontSize: 14, fontWeight: 500 }}>{categoryName}</span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", background: "#f8fafc", borderRadius: 10 }}>
                   <span style={{ fontSize: 13, color: "#64748b" }}>Stock Value</span>
@@ -449,6 +501,14 @@ export default function ProductsPage() {
           <button onClick={() => setShowQuickCategoryModal(true)} style={styles.secondaryBtn}>
             <I.Plus /> Create Category
           </button>
+          {catFilter && (
+            <button
+              onClick={() => handleDeleteCategory(catFilter)}
+              style={{ ...styles.secondaryBtn, borderColor: "#fecaca", color: "#dc2626", background: "#fff5f5" }}
+            >
+              <I.Trash /> Delete Category
+            </button>
+          )}
         </div>
 
         {/* Product Grid */}
@@ -463,7 +523,7 @@ export default function ProductsPage() {
             const priceChanged = p.current_price !== p.base_price;
             return (
               <div key={p.id} style={{ ...styles.card, cursor: "pointer", transition: "all 0.2s", animation: `fadeSlideUp 0.4s ease ${i * 0.04}s both` }}
-                onClick={() => setViewProduct(p)}
+                onClick={() => openView(p)}
                 onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 25px rgba(0,0,0,0.08)"; }}
                 onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.04)"; }}
               >
@@ -506,7 +566,7 @@ export default function ProductsPage() {
 
                 <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
                   <button onClick={e => { e.stopPropagation(); openEdit(p); }} style={{ ...styles.smallBtn, flex: 1 }}><I.Edit /> Edit</button>
-                  <button onClick={e => { e.stopPropagation(); setViewProduct(p); }} style={{ ...styles.smallBtn, flex: 1, background: "#f0f9ff", color: "#0284c7", borderColor: "#bae6fd" }}><I.Eye /> View</button>
+                  <button onClick={e => { e.stopPropagation(); openView(p); }} style={{ ...styles.smallBtn, flex: 1, background: "#f0f9ff", color: "#0284c7", borderColor: "#bae6fd" }}><I.Eye /> View</button>
                   <button onClick={e => { e.stopPropagation(); setDeleteConfirm(p); }} style={{ ...styles.smallBtn, background: "#fef2f2", color: "#dc2626", borderColor: "#fecaca" }}><I.Trash /></button>
                 </div>
               </div>

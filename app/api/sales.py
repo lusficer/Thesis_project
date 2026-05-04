@@ -23,7 +23,8 @@ from app.schemas import SalesImportResponse, DailySalesResponse
 
 router = APIRouter(prefix="/sales", tags=["Sales"])
 
-# job_id → {status, progress, products_imported, records_imported, date_range, error}
+# job_id → {status, progress, products_imported, records_imported, date_range, error,
+#           forecasts_cached, forecasts_skipped, forecasts_failed, forecasts_error}
 _jobs: dict[str, dict] = {}
 
 
@@ -36,6 +37,10 @@ def _new_job() -> str:
         "records_imported":  0,
         "date_range":        None,
         "error":             None,
+        "forecasts_cached":  None,
+        "forecasts_skipped": None,
+        "forecasts_failed":  None,
+        "forecasts_error":   None,
     }
     return jid
 
@@ -173,12 +178,32 @@ def _run_import(job_id: str, file_bytes_list: list[bytes], filenames: list[str])
         date_range = f"{dates.min()} to {dates.max()}" if not dates.empty else None
 
         job.update({
-            "status":            "done",
-            "progress":          100,
+            "status":            "precomputing_forecasts",
+            "progress":          95,
             "products_imported": len(products_seen),
             "records_imported":  records_imported,
             "date_range":        date_range,
         })
+
+        # ── 5. Precompute forecasts for affected products only ───────────
+        # (Hybrid fit takes ~1.4s/product; only recompute products that
+        # actually received new sales data.)
+        if products_seen:
+            try:
+                from app.services.forecast_cache import precompute_all_forecasts
+                pc_result = precompute_all_forecasts(
+                    product_ids=list(products_seen),
+                )
+                job["forecasts_cached"] = pc_result["products_processed"]
+                job["forecasts_skipped"] = len(pc_result["products_skipped"])
+                job["forecasts_failed"] = len(pc_result["failed"])
+            except Exception as pc_exc:
+                # Precompute failure is NOT fatal — import already succeeded.
+                # Log and mark so frontend can show warning.
+                job["forecasts_error"] = str(pc_exc)
+
+        job["status"] = "ready"
+        job["progress"] = 100
 
     except Exception as exc:
         db.rollback()
@@ -214,7 +239,7 @@ async def import_sales_csv(
 
 @router.get("/import/{job_id}/progress")
 async def import_progress(job_id: str):
-    """SSE stream — poll until status == done | error."""
+    """SSE stream — poll until status == ready | error."""
     if job_id not in _jobs:
         raise HTTPException(404, f"Job '{job_id}' not found")
 
@@ -223,7 +248,7 @@ async def import_progress(job_id: str):
             job = _jobs.get(job_id, {})
             yield f"data: {json.dumps(job)}\n\n"
 
-            if job.get("status") in ("done", "error"):
+            if job.get("status") in ("ready", "error"):
                 await asyncio.sleep(300)
                 _jobs.pop(job_id, None)
                 break

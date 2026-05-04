@@ -236,7 +236,7 @@ export default function LoginPage() {
           <div style={{ display: 'flex', borderBottom: `1px solid ${C.border}` }}>
             {[
               { key: 'login',    label: 'Sign In' },
-              { key: 'register', label: 'Create Account' },
+              // { key: 'register', label: 'Create Account' },
             ].map(t => (
               <button
                 key={t.key}

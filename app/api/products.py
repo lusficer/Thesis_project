@@ -1,7 +1,3 @@
-"""
-Products API — CRUD with pagination, search, category filter, bulk import.
-"""
-
 import io
 import os
 import tempfile
@@ -116,6 +112,27 @@ def create_category(data: CategoryCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(cat)
     return cat
+
+
+@router.delete("/categories/{category_id}", status_code=204)
+def delete_category(category_id: int, db: Session = Depends(get_db)):
+    cat = db.query(Category).filter(Category.id == category_id).first()
+    if not cat:
+        raise HTTPException(status_code=404, detail="Category not found")
+
+    # Keep products and child categories, just detach them from the deleted category.
+    db.query(Product).filter(Product.category_id == category_id).update(
+        {Product.category_id: None},
+        synchronize_session=False,
+    )
+    db.query(Category).filter(Category.parent_id == category_id).update(
+        {Category.parent_id: None},
+        synchronize_session=False,
+    )
+
+    db.delete(cat)
+    db.commit()
+    return None
 
 
 # ─── Bulk Import ────────────────────────────────────────────────────
@@ -357,7 +374,6 @@ async def import_progress(job_id: str):
     )
  
 
-# ─── Cleanup junk UK Retail products ────────────────────────────────
 
 @router.post("/cleanup-junk")
 def cleanup_junk_products(db: Session = Depends(get_db)):
@@ -526,12 +542,16 @@ def list_products(
             id=product.id,
             sku=product.sku,
             name=product.name,
+            description=product.description,
+            category_id=product.category_id,
             category_name=cat,
+            image_url=product.image_url,
             current_stock=stock,
             reorder_point=rop,
             stock_status=_stock_status(stock, rop),
             base_price=float(product.base_price),
             current_price=float(product.current_price),
+            cost_price=float(product.cost_price) if product.cost_price is not None else None,
             sales_7d=sales_7d.get(product.id, 0),
             is_active=product.is_active,
         ))

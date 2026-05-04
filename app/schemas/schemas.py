@@ -22,6 +22,9 @@ class TransactionTypeEnum(str, Enum):
     OUT = "OUT"
     ADJUSTMENT = "ADJUSTMENT"
     SALE = "SALE"
+    WHOLESALE = "WHOLESALE"
+    DAMAGE = "DAMAGE"
+    LOSS = "LOSS"
 
 
 # ─── Category ────────────────────────────────────────────────────────
@@ -70,12 +73,16 @@ class ProductListItem(BaseModel):
     id: int
     sku: str
     name: str
+    description: Optional[str] = None
+    category_id: Optional[int] = None
     category_name: Optional[str] = None
+    image_url: Optional[str] = None
     current_stock: int = 0
     reorder_point: int = 0
     stock_status: StockStatusEnum = StockStatusEnum.IN_STOCK
     base_price: float
     current_price: float
+    cost_price: Optional[float] = None
     sales_7d: int = 0  # last 7 days sales
     is_active: bool
     model_config = ConfigDict(from_attributes=True)

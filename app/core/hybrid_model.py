@@ -26,6 +26,7 @@ try:
 except ImportError:
     XGBOOST_AVAILABLE = False
 
+MODEL_VERSION = "hybrid_asym_v1"
 
 # ─────────────────────────────────────────────────────────────────────
 # Custom asymmetric loss for XGBoost

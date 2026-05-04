@@ -36,7 +36,7 @@ from app.models import (
 from app.schemas import (
     DSSRunRequest, DSSReportResponse,
     DSSConfirmOrderRequest, DSSApplyPriceRequest, DSSActionResponse,
-    BacktestRequest, BacktestResponse, DSSScanAllRequest,
+    BacktestRequest, BacktestResponse, DSSScanAllRequest, PMReportRequest,
 )
 from app.api.notifications import create_notification
 from app.core.dss_engine import DSSEngine
@@ -106,6 +106,7 @@ def _probability_pct(value: Optional[float]) -> float:
 
 def _fallback_pm_narrative(payload: dict) -> str:
     ps = payload["portfolio_summary"]
+    selected_product = payload.get("selected_product")
     lines = [
         f"# Portfolio Health Report — {payload['report_date']}",
         "",
@@ -118,6 +119,20 @@ def _fallback_pm_narrative(payload: dict) -> str:
         f"{ps['action_distribution']['LOW_STOCK']} LOW_STOCK.",
         f"**{ps['products_at_risk']} products** flagged at risk (stockout probability >50%).",
         "",
+    ]
+    if selected_product:
+        lines += [
+            "## Selected Product Focus",
+            "",
+            f"Product: **{selected_product['name']}** (ID: {selected_product['product_id']})",
+            f"Category: {selected_product['category']}",
+            f"Current stock: {selected_product['current_stock']}",
+            f"Stockout probability: {selected_product['stockout_probability']:.1f}%",
+            f"Recommended action: {selected_product.get('action') or selected_product.get('recommended_action')}",
+            f"Suggested price change: {selected_product['price_change_pct']:+.1f}%",
+            "",
+        ]
+    lines += [
         "## Top 5 At-Risk Products",
         "",
     ]
@@ -771,6 +786,16 @@ def portfolio_meta(db: Session = Depends(get_db)):
     Cheap — single aggregate queries only.
     """
     cache_meta = get_forecast_cache_meta(db)
+    active_cached_products = (
+        db.query(func.count(func.distinct(ForecastCache.product_id)))
+        .join(Product, Product.id == ForecastCache.product_id)
+        .filter(
+            ForecastCache.model_version == cache_meta["model_version"],
+            Product.is_active == True,
+        )
+        .scalar()
+        or 0
+    )
     total_products = db.query(func.count(Product.id)).filter(
         Product.is_active == True
     ).scalar() or 0
@@ -778,7 +803,7 @@ def portfolio_meta(db: Session = Depends(get_db)):
     return {
         "last_computed_at": cache_meta["last_computed_at"].isoformat()
         if cache_meta["last_computed_at"] else None,
-        "products_cached": cache_meta["products_cached"],
+        "products_cached": active_cached_products,
         "total_products": total_products,
         "model_version": cache_meta["model_version"],
     }
@@ -1142,7 +1167,7 @@ def model_performance(db: Session = Depends(get_db)):
 
 
 @router.post("/pm-report")
-def generate_pm_report(db: Session = Depends(get_db)):
+def generate_pm_report(data: Optional[PMReportRequest] = None, db: Session = Depends(get_db)):
     """
     Generate portfolio-level PM report markdown using n8n webhook + LLM.
     Falls back to a template narrative when webhook is unavailable.
@@ -1163,6 +1188,102 @@ def generate_pm_report(db: Session = Depends(get_db)):
             },
             "llm_generated": False,
         }
+
+    selected_product_id = data.product_id if data else None
+    selected_product = None
+    selected_product_details = None
+    if selected_product_id is not None:
+        selected_product = next(
+            (r for r in portfolio_rows if int(r.get("product_id") or 0) == selected_product_id),
+            None,
+        )
+        if not selected_product:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Product {selected_product_id} not found in active portfolio",
+            )
+
+        latest_report = (
+            db.query(DSSReport)
+            .filter(DSSReport.product_id == selected_product_id)
+            .order_by(DSSReport.generated_at.desc())
+            .first()
+        )
+        if latest_report:
+            inv = latest_report.inventory_advice or {}
+            pr = latest_report.pricing_advice or {}
+            params = latest_report.parameters or {}
+            fc = latest_report.forecast_data or {}
+            yhat_series = fc.get("yhat") or []
+            forecast_daily = float(np.mean(yhat_series[:7] or yhat_series)) if yhat_series else 0.0
+            forecast_7d = float(np.sum(yhat_series[:7])) if yhat_series else round(forecast_daily * 7.0, 2)
+
+            selected_product_details = {
+                "product_id": int(selected_product["product_id"]),
+                "name": selected_product["product_name"],
+                "category": selected_product["category"],
+                "current_stock": int(params.get("current_stock") or selected_product.get("current_stock") or 0),
+                "rop": round(float(inv.get("reorder_point") or selected_product.get("reorder_point") or 0.0), 2),
+                "forecast": round(forecast_daily or float(selected_product.get("avg_daily_forecast") or 0.0), 2),
+                "forecast_7d": round(forecast_7d, 2),
+                "target_sell_through": int(params.get("target_days_to_sell") or 30),
+                "target_sell_through_days": int(params.get("target_days_to_sell") or 30),
+                "current_sales_velocity": round(float(inv.get("current_daily_velocity") or pr.get("actual_velocity") or selected_product.get("avg_daily_forecast") or 0.0), 2),
+                "velocity_ratio": round(float(pr.get("velocity_ratio") or selected_product.get("velocity_ratio") or 0.0), 2),
+                "suggested_price": round(float(pr.get("suggested_price") or 0.0), 2),
+                "current_price": round(float(pr.get("current_price") or selected_product.get("current_price") or 0.0), 2),
+                "pricing_reason": pr.get("reason"),
+                "action": inv.get("action") or selected_product.get("recommended_action"),
+                "recommended_action": inv.get("action") or selected_product.get("recommended_action"),
+                "qty_to_order": int(inv.get("qty_to_order") or inv.get("suggested_order_qty") or 0),
+                "days_coverage": round(float(inv.get("days_of_supply") or 0.0), 2),
+                "stockout_probability": round(float(inv.get("stockout_probability") or selected_product.get("stockout_probability") or 0.0), 2),
+                "price_change_pct": round(float(pr.get("adjustment_pct") or selected_product.get("price_change_pct") or 0.0), 2),
+                "report_generated_at": latest_report.generated_at.isoformat() if latest_report.generated_at else None,
+                "data_source": "dss_report",
+            }
+        else:
+            current_stock = int(selected_product.get("current_stock") or 0)
+            reorder_point = float(selected_product.get("reorder_point") or 0.0)
+            avg_daily_forecast = float(selected_product.get("avg_daily_forecast") or 0.0)
+            price_change_pct = float(selected_product.get("price_change_pct") or 0.0)
+            current_price = float(selected_product.get("current_price") or 0.0)
+            suggested_price = (
+                round(current_price * (1 + price_change_pct / 100.0), 2)
+                if current_price > 0
+                else 0.0
+            )
+            qty_to_order = int(max(0.0, reorder_point - current_stock))
+            days_coverage = (
+                round(current_stock / avg_daily_forecast, 2)
+                if avg_daily_forecast > 0
+                else 0.0
+            )
+
+            selected_product_details = {
+                "product_id": int(selected_product["product_id"]),
+                "name": selected_product["product_name"],
+                "category": selected_product["category"],
+                "current_stock": current_stock,
+                "rop": round(reorder_point, 2),
+                "forecast": round(avg_daily_forecast, 2),
+                "forecast_7d": round(avg_daily_forecast * 7.0, 2),
+                "target_sell_through": 30,
+                "target_sell_through_days": 30,
+                "current_sales_velocity": round(avg_daily_forecast, 2),
+                "velocity_ratio": round(float(selected_product.get("velocity_ratio") or 0.0), 2),
+                "suggested_price": suggested_price,
+                "current_price": round(current_price, 2),
+                "pricing_reason": "Derived from portfolio fallback (no DSS report found).",
+                "action": selected_product.get("recommended_action"),
+                "recommended_action": selected_product.get("recommended_action"),
+                "qty_to_order": qty_to_order,
+                "days_coverage": days_coverage,
+                "stockout_probability": round(float(selected_product.get("stockout_probability") or 0.0), 2),
+                "price_change_pct": round(price_change_pct, 2),
+                "report_generated_at": None,
+                "data_source": "portfolio_fallback",
+            }
 
     action_distribution = {"ORDER_NOW": 0, "HOLD": 0, "LOW_STOCK": 0}
     stockout_probs: list[float] = []
@@ -1236,14 +1357,39 @@ def generate_pm_report(db: Session = Depends(get_db)):
     avg_naive_service_level = float(backtest_summary.get("avg_naive_service_level") or 0.0)
     dss_advantage_pct = round(avg_dss_service_level - avg_naive_service_level, 2)
 
+    product_payload = None
+    if selected_product_details:
+        product_payload = {
+            "metrics": {
+                "current_stock": selected_product_details.get("current_stock"),
+                "rop": selected_product_details.get("rop"),
+                "forecast_7d": selected_product_details.get("forecast_7d"),
+                "target_days": selected_product_details.get("target_sell_through_days"),
+                "current_velocity": selected_product_details.get("current_sales_velocity"),
+                "velocity_ratio": selected_product_details.get("velocity_ratio"),
+            },
+            "pricing": {
+                "suggested_price": selected_product_details.get("suggested_price"),
+                "current_price": selected_product_details.get("current_price"),
+                "reason": selected_product_details.get("pricing_reason"),
+            },
+            "recommendation": {
+                "action": selected_product_details.get("action"),
+                "qty_to_order": selected_product_details.get("qty_to_order"),
+            },
+        }
+
     payload = {
         "report_date": report_date,
+        "product_name": selected_product_details.get("name") if selected_product_details else None,
+        "data": product_payload,
         "portfolio_summary": {
             "total_products": len(portfolio_rows),
             "action_distribution": action_distribution,
             "avg_stockout_probability": avg_stockout_probability,
             "products_at_risk": products_at_risk,
         },
+        "selected_product": selected_product_details,
         "top_5_at_risk": top_5_at_risk,
         "top_3_performers": top_3_performers,
         "category_performance": [

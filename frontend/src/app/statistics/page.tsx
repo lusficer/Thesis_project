@@ -173,11 +173,11 @@ function timeAgo(iso: string | null): string {
 
 function renderMarkdown(md: string): string {
   return md
-    .replace(/^### (.+)$/gm, '<h3 style="margin:20px 0 8px;font-size:15px;font-weight:700">$1</h3>')
-    .replace(/^## (.+)$/gm, '<h2 style="margin:24px 0 10px;font-size:18px;font-weight:700">$1</h2>')
-    .replace(/^# (.+)$/gm, '<h1 style="margin:0 0 16px;font-size:22px;font-weight:700">$1</h1>')
+    .replace(/^### (.+)$/gm, '<h3 style="margin:28px 0 12px;font-size:24px;font-weight:700;line-height:1.35">$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2 style="margin:32px 0 14px;font-size:28px;font-weight:700;line-height:1.3">$1</h2>')
+    .replace(/^# (.+)$/gm, '<h1 style="margin:0 0 20px;font-size:34px;font-weight:800;line-height:1.2">$1</h1>')
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/^- (.+)$/gm, '<div style="padding-left:16px;margin:4px 0">• $1</div>')
+    .replace(/^- (.+)$/gm, '<div style="padding-left:24px;margin:8px 0">• $1</div>')
     .replace(/\n\n/g, '<br/><br/>')
     .replace(/\n/g, '<br/>');
 }
@@ -204,6 +204,8 @@ export default function StatisticsPage() {
   const [pmReportMarkdown, setPmReportMarkdown] = useState<string | null>(null);
   const [pmReportError, setPmReportError] = useState<string | null>(null);
   const [pmReportCopied, setPmReportCopied] = useState(false);
+  const [pmProductId, setPmProductId] = useState<number | null>(null);
+  const [pmReportScope, setPmReportScope] = useState<number | null>(null);
 
   // Filter state
   const [filterCategory, setFilterCategory] = useState<string>('ALL');
@@ -231,6 +233,15 @@ export default function StatisticsPage() {
   const categories = Array.from(
     new Set(items.map(i => i.category))
   ).sort();
+  const pmProductOptions = [...items]
+    .filter((i) => i.status === 'ok')
+    .sort((a, b) => a.product_name.localeCompare(b.product_name));
+  const selectedPmProduct = pmProductId == null
+    ? null
+    : pmProductOptions.find((i) => i.product_id === pmProductId) ?? null;
+  const pmReportScopeProduct = pmReportScope == null
+    ? null
+    : pmProductOptions.find((i) => i.product_id === pmReportScope) ?? null;
 
   // Action severity order (for sorting)
   const actionOrder: Record<string, number> = {
@@ -301,6 +312,12 @@ export default function StatisticsPage() {
     loadData();
   }, [loadData]);
 
+  useEffect(() => {
+    if (pmProductId == null) return;
+    const exists = pmProductOptions.some((p) => p.product_id === pmProductId);
+    if (!exists) setPmProductId(null);
+  }, [pmProductId, pmProductOptions]);
+
   // ─── Recompute trigger ──────────────────────────────────────────────
   const handleRecompute = useCallback(async () => {
     if (recomputing) return;
@@ -364,7 +381,9 @@ export default function StatisticsPage() {
   }, [recomputing, loadData]);
 
   const generatePMReport = useCallback(async () => {
-    if (pmReportMarkdown && !pmReportLoading && !pmReportOpen) {
+    if (pmProductId == null) return;
+    const sameScope = pmReportScope === pmProductId;
+    if (pmReportMarkdown && sameScope && !pmReportLoading && !pmReportOpen) {
       setPmReportOpen(true);
       return;
     }
@@ -372,15 +391,18 @@ export default function StatisticsPage() {
     setPmReportError(null);
     setPmReportMarkdown(null);
     setPmReportOpen(true);
+    setPmReportCopied(false);
     try {
-      const res = await dssAPI.generatePMReport();
+      const res = await dssAPI.generatePMReport({ product_id: pmProductId });
       setPmReportMarkdown((res.data as any).markdown ?? 'No content returned.');
+      setPmReportScope(pmProductId);
     } catch (e: any) {
       setPmReportError(e?.response?.data?.detail ?? e?.message ?? 'Failed to generate report');
+      setPmReportScope(null);
     } finally {
       setPmReportLoading(false);
     }
-  }, [pmReportLoading, pmReportOpen, pmReportMarkdown]);
+  }, [pmProductId, pmReportLoading, pmReportOpen, pmReportMarkdown, pmReportScope]);
 
   const copyPMReport = useCallback(() => {
     if (!pmReportMarkdown || !navigator?.clipboard) return;
@@ -415,18 +437,45 @@ export default function StatisticsPage() {
             {recomputeMessage} ({recomputeProgress}%)
           </span>
         )}
+        <select
+          value={pmProductId == null ? '' : String(pmProductId)}
+          onChange={(e) => {
+            const v = e.target.value;
+            setPmProductId(v ? Number(v) : null);
+          }}
+          disabled={pmReportLoading || loading || pmProductOptions.length === 0}
+          style={{
+            padding: '8px 10px',
+            borderRadius: 8,
+            border: `1px solid ${C.border}`,
+            background: C.surface,
+            color: C.text,
+            fontSize: 13,
+            cursor: (pmReportLoading || loading || pmProductOptions.length === 0) ? 'not-allowed' : 'pointer',
+            minWidth: 220,
+            opacity: (pmReportLoading || loading || pmProductOptions.length === 0) ? 0.65 : 1,
+          }}
+          title="Choose product focus for PM report"
+        >
+          <option value="" disabled>Select a product</option>
+          {pmProductOptions.map((p) => (
+            <option key={p.product_id} value={String(p.product_id)}>
+              {p.product_name}
+            </option>
+          ))}
+        </select>
         <button
           onClick={generatePMReport}
-          disabled={pmReportLoading || loading}
+          disabled={pmReportLoading || loading || pmProductOptions.length === 0 || pmProductId == null}
           style={{
             padding: '8px 16px', borderRadius: 8,
             border: `1px solid ${C.accent}`,
             background: C.accent,
             color: '#fff',
             fontSize: 13, fontWeight: 600,
-            cursor: (pmReportLoading || loading) ? 'wait' : 'pointer',
+            cursor: (pmReportLoading || loading || pmProductOptions.length === 0 || pmProductId == null) ? 'not-allowed' : 'pointer',
             transition: 'background 0.15s',
-            opacity: (pmReportLoading || loading) ? 0.6 : 1,
+            opacity: (pmReportLoading || loading || pmProductOptions.length === 0 || pmProductId == null) ? 0.6 : 1,
           }}
         >
           {pmReportLoading ? 'Generating…' : '📋 PM Report'}
@@ -552,6 +601,9 @@ export default function StatisticsPage() {
       acc[action] = (acc[action] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
+    const atRiskCount = items.filter(
+      (item) => item.status === 'ok' && (item.stockout_probability ?? 0) > 50
+    ).length;
 
     const donutData = [
       { name: 'ORDER_NOW', value: actionCounts.ORDER_NOW || 0, color: C.danger },
@@ -762,10 +814,10 @@ export default function StatisticsPage() {
               </div>
               <div style={{ border: `1px solid ${C.border}`, borderRadius: 10, padding: 10 }}>
                 <div style={{ color: C.subtle, fontSize: 11 }}>
-                  Products Above Safety Threshold (&gt;{perfData.summary.safety_threshold.toFixed(0)}%)
+                  Products At Risk (&gt;50% stockout)
                 </div>
                 <div style={{ color: C.danger, fontFamily: 'JetBrains Mono, monospace', fontSize: 16, fontWeight: 700 }}>
-                  {perfData.summary.products_above_safety_threshold}
+                  {atRiskCount}
                 </div>
               </div>
             </div>
@@ -1158,36 +1210,41 @@ export default function StatisticsPage() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: 24,
+            padding: 30,
           }}
         >
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
               width: '100%',
-              maxWidth: 720,
-              maxHeight: '85vh',
+              maxWidth: 1120,
+              maxHeight: '90vh',
               overflowY: 'auto',
-              borderRadius: 16,
+              borderRadius: 20,
               background: C.surface,
               boxShadow: '0 20px 50px rgba(0,0,0,0.2)',
-              padding: 24,
+              padding: 36,
               animation: 'pmFadeIn 0.18s ease-out',
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, gap: 10 }}>
-              <h3 style={{ margin: 0, fontSize: 20, color: C.text, fontWeight: 700 }}>PM Report</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, gap: 12 }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: 36, color: C.text, fontWeight: 800, lineHeight: 1.1 }}>PM Report</h3>
+                <div style={{ marginTop: 8, fontSize: 18, color: C.muted }}>
+                  {pmReportScopeProduct ? `Focus product: ${pmReportScopeProduct.product_name}` : 'No product selected'}
+                </div>
+              </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button
                   onClick={copyPMReport}
                   disabled={!pmReportMarkdown}
                   style={{
-                    padding: '7px 12px',
-                    borderRadius: 8,
+                    padding: '11px 16px',
+                    borderRadius: 10,
                     border: `1px solid ${C.border}`,
                     background: C.surface,
                     color: pmReportCopied ? C.success : C.text,
-                    fontSize: 12,
+                    fontSize: 16,
                     fontWeight: 600,
                     cursor: pmReportMarkdown ? 'pointer' : 'not-allowed',
                   }}
@@ -1201,12 +1258,12 @@ export default function StatisticsPage() {
                     setPmReportCopied(false);
                   }}
                   style={{
-                    padding: '7px 10px',
-                    borderRadius: 8,
+                    padding: '10px 14px',
+                    borderRadius: 10,
                     border: `1px solid ${C.border}`,
                     background: C.surface,
                     color: C.muted,
-                    fontSize: 14,
+                    fontSize: 20,
                     fontWeight: 700,
                     cursor: 'pointer',
                   }}
@@ -1217,7 +1274,7 @@ export default function StatisticsPage() {
             </div>
 
             {pmReportLoading && (
-              <div style={{ minHeight: 180, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.muted, fontSize: 14 }}>
+              <div style={{ minHeight: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.muted, fontSize: 19 }}>
                 <span style={{ animation: 'pmPulse 1.4s ease-in-out infinite' }}>
                   Generating report… This may take up to 60 seconds.
                 </span>
@@ -1225,18 +1282,18 @@ export default function StatisticsPage() {
             )}
 
             {!pmReportLoading && pmReportError && (
-              <div style={{ border: `1px solid ${C.danger}33`, borderRadius: 10, background: '#fee2e2', padding: 14 }}>
-                <div style={{ color: C.danger, fontWeight: 700, marginBottom: 8 }}>Failed to generate report</div>
-                <div style={{ color: C.text, fontSize: 13, marginBottom: 10 }}>{pmReportError}</div>
+              <div style={{ border: `1px solid ${C.danger}33`, borderRadius: 12, background: '#fee2e2', padding: 18 }}>
+                <div style={{ color: C.danger, fontWeight: 700, fontSize: 20, marginBottom: 10 }}>Failed to generate report</div>
+                <div style={{ color: C.text, fontSize: 16, marginBottom: 14 }}>{pmReportError}</div>
                 <button
                   onClick={generatePMReport}
                   style={{
-                    padding: '7px 12px',
-                    borderRadius: 8,
+                    padding: '10px 16px',
+                    borderRadius: 10,
                     border: `1px solid ${C.accent}`,
                     background: C.accent,
                     color: '#fff',
-                    fontSize: 12,
+                    fontSize: 15,
                     fontWeight: 600,
                     cursor: 'pointer',
                   }}
@@ -1248,7 +1305,7 @@ export default function StatisticsPage() {
 
             {!pmReportLoading && !pmReportError && pmReportMarkdown && (
               <div
-                style={{ lineHeight: 1.8, fontSize: 14, color: C.text }}
+                style={{ lineHeight: 1.92, fontSize: 20, color: C.text }}
                 dangerouslySetInnerHTML={{ __html: renderMarkdown(pmReportMarkdown) }}
               />
             )}

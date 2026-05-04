@@ -223,6 +223,10 @@ class DSSRunRequest(BaseModel):
     penalty_under: float = Field(default=5.0, ge=0.1)
 
 
+class PMReportRequest(BaseModel):
+    product_id: Optional[int] = None
+
+
 class DSSReportResponse(BaseModel):
     id: int
     report_id: Optional[int] = None

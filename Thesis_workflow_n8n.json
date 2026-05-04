@@ -1,0 +1,122 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "e7772d79-945a-4aae-8972-fecdba13ba33",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "409d34ed-fcd8-4fcb-95ce-14975b20598a",
+      "name": "Webhook",
+      "webhookId": "e7772d79-945a-4aae-8972-fecdba13ba33"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        464,
+        0
+      ],
+      "id": "cd7bf381-3272-4830-9e97-4436859fc79e",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "= Role: Senior Supply Chain & Revenue Manager.\n Objective: Analyze real-time inventory health and dynamic pricing strategy based on sales velocity and market volatility.\n \n Input Data:\n - Product: {{ $json.body.product_name }}\n - Current Stock: {{ $json.body.data.metrics.current_stock }}\n - ROP (Reorder Point): {{ $json.body.data.metrics.rop }}\n - Forecast (7d): {{ $json.body.data.metrics.forecast_7d }}\n - Target Sell-Through: {{ $json.body.data.metrics.target_days }} days\n - Current Sales Velocity: {{ $json.body.data.metrics.current_velocity }} units/day\n - Velocity Ratio: {{ $json.body.data.metrics.velocity_ratio }} (Actual Velocity / Target Velocity)\n - Suggested Price: ${{ $json.body.data.pricing.suggested_price }} (Current: ${{ $json.body.data.pricing.current_price }})\n - Pricing Reason: {{ $json.body.data.pricing.reason }}\n - Action: {{ $json.body.data.recommendation.action }}\n - Qty to Order: {{ $json.body.data.recommendation.qty_to_order }}\n - Days Coverage: {{ $json.body.data.metrics.current_stock / ($json.body.data.metrics.forecast_7d/7) }}\n \n Instructions:\n 1. Analyze Inventory:\n    - Assess status using Current Stock vs ROP and write exactly one word in the sentence: Critical, Stable, or Surplus.\n    - Mention Days Coverage.\n \n 2. Analyze Pricing (Velocity Logic):\n    - Compare Actual Velocity vs Target.\n    - If Velocity Ratio > 1.2: classify as Hot and choose Increase.\n    - If Velocity Ratio < 0.8: classify as Cold and choose Decrease.\n    - Otherwise: classify as Normal and choose Maintain.\n \n 3. Strict Formatting:\n    - Follow the Output Template exactly.\n    - Do NOT output bracket options like [Hot/Cold/Normal] or [Increase/Decrease/Maintain].\n    - Always resolve to ONE final choice.\n    - Do NOT include any \"[\" or \"]\" characters in final output.\n    - Do NOT invent fields outside Input Data.\n \n Output Template (Markdown):\n \n ### Strategic Diagnostic Report\n \n **1. Executive Summary**\n Current inventory for **{{ $json.body.product_name }}** stands at **{{ $json.body.data.metrics.current_stock }} units**, which is \n**<Critical|Stable|Surplus>** compared to the Reorder Point of **{{ $json.body.data.metrics.rop }}**. The product is demonstrating a Sales Velocity of **{{ \n$json.body.data.metrics.current_velocity }} units/day**, which is **{{ $json.body.data.metrics.velocity_ratio }}x** against the target.\n \n **2. Pricing & Revenue Strategy**\n * **Action:** **<Increase|Decrease|Maintain>** Price to **${{ $json.body.data.pricing.suggested_price }}**.\n * **Rationale:** The product is a **<Hot|Cold|Normal>** item with a Velocity Ratio of **{{ $json.body.data.metrics.velocity_ratio }}x**. The system \nrecommends this adjustment to **<capture margin|stimulate demand|maintain balance>** based on the logic: *{{ $json.body.data.pricing.reason }}*.\n * **Expert Tip:** <One concise strategic tip based on velocity and stock context.>\n \n **3. Inventory Action**\n 👉 Execute **{{ $json.body.data.recommendation.action }}** for **{{ $json.body.data.recommendation.qty_to_order }} units**.\n * **Reasoning:** Current stock provides approximately **{{ \n   $json.body.data.recommendation.action === 'ORDER_NOW'\n     ? Math.floor($json.body.data.metrics.current_stock / ($json.body.data.metrics.forecast_7d / 7))\n     : $json.body.data.recommendation.action === 'HOLD'\n       ? Math.ceil($json.body.data.metrics.current_stock / ($json.body.data.metrics.forecast_7d / 7))\n       : Math.round($json.body.data.metrics.current_stock / ($json.body.data.metrics.forecast_7d / 7))\n }} days** of coverage based on the daily forecast. <One concise justification aligned with stock vs ROP and action.>\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        176,
+        0
+      ],
+      "id": "bf439edd-4a79-46a8-94e1-2413f3e54e7b",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash-lite",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        176,
+        160
+      ],
+      "id": "2ebabb60-1889-4ca7-88f0-cd6c1546608d",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "JOHP6kpXluwiI7FC",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "809f33c8-eb0f-4e3a-96e0-ba3027abaeae",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "06737cb8f9019484a962e1e3d4ca87e26e668a5e47db390c2457c4cd4dc9b105"
+  },
+  "id": "JEQqb5aitVXC00-HFo1md",
+  "tags": []
+}

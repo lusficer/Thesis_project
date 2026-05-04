@@ -1,101 +1,101 @@
 # eCommerce Smart DSS
-**Decision Support System for Product Management**  
-Bachelor's Thesis Project — Inventory & Pricing Optimization
 
----
+Decision Support System for inventory and pricing optimization.
 
-## Project Structure
+## Core features
 
-```
-dss-project/
-├── app/
-│   ├── core/
-│   │   ├── preprocessing.py       # Universal Data Adapter (7 CSV formats)
-│   │   ├── hybrid_model.py        # Prophet + XGBoost with asymmetric loss
-│   │   ├── dss_engine.py          # Inventory calculations + dynamic pricing
-│   │   └── explainability.py      # n8n webhook → LLM integration
-│   ├── api/
-│   │   └── routes.py              # FastAPI /train and /predict endpoints
-│   └── frontend/
-│       ├── app.py                 # Streamlit entry point (sidebar nav)
-│       ├── components/
-│       │   ├── upload.py          # File upload + Universal Data Adapter UI
-│       │   ├── product_selector.py# Product dropdown + config inputs
-│       │   └── charts.py          # Reusable Plotly chart builders
-│       ├── pages/
-│       │   ├── strategic_report.py# 🎯 DSS output page (forecast + advice)
-│       │   └── analytics.py       # 📊 Analytics Dashboard (3 tabs)
-│       └── styles/
-│           └── theme.py           # Colors, CHART_LAYOUT, MASTER_CSS, inject_css()
-├── .streamlit/
-│   └── config.toml                # Light theme config
-├── requirements.txt
-├── run.py                         # Convenience launcher
-└── README.md
+- Product-level DSS analysis (forecast, inventory action, dynamic pricing)
+- Portfolio statistics dashboard
+- PM report generation with n8n + LLM narrative
+- Recompute forecasts for active products
+
+## Project folders
+
+```text
+Thesis_project/
+├── app/                         # FastAPI backend
+│   ├── api/                     # REST endpoints
+│   ├── core/                    # DSS logic and models
+│   └── services/                # cache/recompute services
+├── frontend/                    # Next.js frontend
+│   └── src/app/                 # app routes (dss, statistics, products, ...)
+├── alembic/                     # DB migrations
+├── docker-compose.yml           # n8n container
+├── Thesis_workflow_n8n.json     # n8n workflow to import
+├── requirements.txt             # Python dependencies
+└── run.py                       # backend launcher
 ```
 
----
+## Prerequisites
 
-## Quick Start
+- Python 3.9+
+- Node.js 18+ and npm
+- Docker + Docker Compose (for n8n)
+
+## First-time setup
+
+From project root:
 
 ```bash
-# 1. Install dependencies
 pip install -r requirements.txt
-
-# 2. Start backend (FastAPI) — in one terminal
-python run.py --backend
-
-# 3. Start frontend (Streamlit) — in another terminal
-python run.py
-
-# Or start both together:
-python run.py --all
+cd frontend && npm install && cd ..
+alembic upgrade head
 ```
 
----
+## Run locally
 
-## Pages
+### 1) Backend
 
-### 📊 Analytics Dashboard
-Explore your data **before** running the AI forecast.
-- **Tab 1 — Product Overview**: Individual product deep-dive (trend, monthly, day-of-week, price history, raw table)
-- **Tab 2 — Insights**: Cross-product analytics (Top 10, heatmap, YoY trend, sales density)
-- **Tab 3 — Simulation**: What-if stock projection without ML (historical averages)
+```bash
+python run.py --reload
+```
 
-### 🎯 Strategic Report
-AI-powered DSS output after clicking **GENERATE INSIGHTS**.
-- Product banner + Historical Data Explorer
-- ORDER_NOW / HOLD / LOW_STOCK action card
-- Inventory metrics (ROP, Safety Stock) + Dynamic Pricing
-- AI Analyst card (n8n → LLM explanation)
-- 30-Day Inventory Projection chart
-- Backtest Validation (DSS vs Naive comparison)
+- API: `http://localhost:8000/api`
+- Docs: `http://localhost:8000/docs`
 
----
+### 2) Frontend
 
-## Supported CSV Formats (Auto-Detection)
+In a second terminal:
 
-| Format | Key Columns |
-|--------|-------------|
-| India Sales | Order ID, Order Date, Sub-Category, Amount, Quantity |
-| UK Retail I | InvoiceNo, StockCode, UnitPrice |
-| UK Retail II | Invoice, StockCode, Price |
-| Electronics | Order Date, Product, Price Each |
-| Olist | order_purchase_timestamp, product_id, price |
-| Retail Transactions | Transaction_ID, Product (list), Total_Cost |
-| FMCG 2023-24 | Order_ID, Order_Date, Product_Name |
-| Favorita Ecuador | date, family, sales |
-| Unknown | → Manual Mapping UI |
+```bash
+cd frontend
+npm run dev
+```
 
----
+- UI: `http://localhost:3000`
+- Frontend env file: `frontend/.env.local`
+  - `NEXT_PUBLIC_API_URL=http://localhost:8000/api`
 
-## Session State Keys
+## n8n Docker setup (first run)
 
-| Key | Set by | Used by |
-|-----|--------|---------|
-| `df_clean` | `upload.py` | Strategic Report |
-| `price_map` | `upload.py` | Strategic Report, Simulation tab |
-| `analytics_df` | `upload.py` | Analytics Dashboard |
-| `dss_result` | Strategic Report | Strategic Report (result persistence) |
-| `dss_product` | Strategic Report | Strategic Report |
-| `dss_stock` / `dss_price` / `dss_target_days` | Strategic Report | Strategic Report |
+1. Start n8n:
+
+```bash
+docker-compose up -d
+```
+
+2. Open `http://localhost:5678` and create a local admin account.
+3. Import workflow from file: `Thesis_workflow_n8n.json`.
+4. Open node **Google Gemini Chat Model**, create credential, add API key, then activate the workflow.
+
+> Security note: This repository does not include any API keys.
+
+## n8n webhook used by backend
+
+Default:
+
+`http://localhost:5678/webhook/pm-report`
+
+Optional override:
+
+```bash
+export N8N_WEBHOOK_URL="http://localhost:5678/webhook/your-path"
+```
+
+## Useful commands
+
+```bash
+python run.py
+cd frontend && npm run build
+docker-compose down
+```

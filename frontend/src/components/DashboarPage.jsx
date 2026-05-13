@@ -159,9 +159,20 @@ export default function DashboardPage() {
 
   // Derived revenue metrics from chart data
   const totalRevenue30d = revenueChart.reduce((sum, d) => sum + (d.revenue || 0), 0);
-  const prevHalf = revenueChart.slice(0, 15).reduce((s, d) => s + (d.revenue || 0), 0);
-  const currHalf = revenueChart.slice(15).reduce((s, d) => s + (d.revenue || 0), 0);
-  const revenueTrend = prevHalf > 0 ? ((currHalf - prevHalf) / prevHalf * 100) : 0;
+  const splitIdx = Math.floor(revenueChart.length / 2);
+  const prevWindow = revenueChart.slice(0, splitIdx);
+  const currWindow = revenueChart.slice(splitIdx);
+  const prevHalf = prevWindow.reduce((s, d) => s + (d.revenue || 0), 0);
+  const currHalf = currWindow.reduce((s, d) => s + (d.revenue || 0), 0);
+  const prevActiveDays = prevWindow.filter((d) => (d.revenue || 0) > 0).length;
+  const currActiveDays = currWindow.filter((d) => (d.revenue || 0) > 0).length;
+  const hasComparableTrend =
+    prevWindow.length >= 7 &&
+    currWindow.length >= 7 &&
+    prevActiveDays >= 5 &&
+    currActiveDays >= 5 &&
+    prevHalf > 0;
+  const revenueTrend = hasComparableTrend ? ((currHalf - prevHalf) / prevHalf * 100) : 0;
   const revenueToday = revenueChart.length > 0 ? (revenueChart[revenueChart.length - 1].revenue || 0) : 0;
 
   // Top 5 selling products for bar chart
@@ -228,11 +239,11 @@ export default function DashboardPage() {
                 return `Revenue ${startDate} → ${end}`;
               })(),
               value: fmt(chartRevTotal || totalRevenue30d || summary?.revenue_month || 0),
-              sub: revenueTrend !== 0
+              sub: hasComparableTrend
                 ? `${revenueTrend > 0 ? "▲" : "▼"} ${Math.abs(revenueTrend).toFixed(1)}% vs prev half`
                 : `${fmt(revenueToday || summary?.revenue_today || 0)} on ${latestDate || "latest day"}`,
-              trendUp: revenueTrend > 0,
-              trendDown: revenueTrend < 0,
+              trendUp: hasComparableTrend && revenueTrend > 0,
+              trendDown: hasComparableTrend && revenueTrend < 0,
             },
           ].map((card, i) => (
             <div key={i} style={{

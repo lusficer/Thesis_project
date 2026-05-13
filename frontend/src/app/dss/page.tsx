@@ -54,6 +54,34 @@ const actionColors: Record<string, [string, string]> = {
 };
 const getColor = (s?: string) => actionColors[s?.replace(/\s/g,'_') ?? ''] ?? [C.muted, '#64748b22'];
 
+const formatApiErrorDetail = (detail: any): string => {
+  if (!detail) return '';
+  if (typeof detail === 'string') return detail;
+  if (Array.isArray(detail)) {
+    return detail
+      .map((item) => formatApiErrorDetail(item))
+      .filter(Boolean)
+      .join(' | ');
+  }
+  if (typeof detail === 'object') {
+    if (typeof detail.msg === 'string') {
+      const loc = Array.isArray(detail.loc) ? detail.loc.join('.') : '';
+      return loc ? `${loc}: ${detail.msg}` : detail.msg;
+    }
+    try {
+      return JSON.stringify(detail);
+    } catch {
+      return String(detail);
+    }
+  }
+  return String(detail);
+};
+
+const getApiErrorMessage = (error: any, fallback: string): string => {
+  const detailMessage = formatApiErrorDetail(error?.response?.data?.detail).trim();
+  return detailMessage || error?.message || fallback;
+};
+
 // ─── Tiny components ──────────────────────────────────────────────────
 const Card = ({ children, style = {} }: any) => (
   <div style={{
@@ -307,6 +335,7 @@ export default function DSSPage() {
   const [penaltyUnder, setPenaltyUnder] = useState('5.0');
   const [btDays, setBtDays]             = useState('90');
   const [btStock, setBtStock]           = useState('');
+  const [forecastLimitModal, setForecastLimitModal] = useState<{ entered: number; adjusted: number } | null>(null);
 
   useEffect(() => {
     productsAPI.list({ page: 1, page_size: 200 })
@@ -355,11 +384,19 @@ export default function DSSPage() {
 
   const runAnalysis = async () => {
     if (!selected) return;
+    const parsedForecastDays = parseInt(forecastDays) || 30;
+    if (parsedForecastDays < 7 || parsedForecastDays > 90) {
+      const adjustedForecastDays = Math.min(90, Math.max(7, parsedForecastDays));
+      setForecastDays(String(adjustedForecastDays));
+      setForecastLimitModal({ entered: parsedForecastDays, adjusted: adjustedForecastDays });
+      setError(null);
+      return;
+    }
     setLoading(true); setError(null); setResult(null); setActionMsg(null);
     try {
       const payload: any = {
         product_id: selected.id,
-        future_days: parseInt(forecastDays) || 30,
+        future_days: parsedForecastDays,
         target_days_to_sell: parseInt(targetDays) || 30,
         penalty_under: parseFloat(penaltyUnder) || 5,
       };
@@ -370,7 +407,7 @@ export default function DSSPage() {
       setTab('analysis');
       dssAPI.reports(selected.id, 5).then((r: any) => setHistory(r.data || [])).catch(() => {});
     } catch (e: any) {
-      setError(e?.response?.data?.detail || 'Analysis failed. Check sales history data.');
+      setError(getApiErrorMessage(e, 'Analysis failed. Check sales history data.'));
     } finally {
       setLoading(false);
     }
@@ -408,7 +445,7 @@ export default function DSSPage() {
       const confirmedQty = qty || suggestedQty;
       setStock(prev => String((parseInt(prev) || 0) + confirmedQty));
     } catch (e: any) {
-      setActionMsg({ text: e?.response?.data?.detail || 'Order confirmation failed', ok: false });
+      setActionMsg({ text: getApiErrorMessage(e, 'Order confirmation failed'), ok: false });
       setShowConfirmModal(false);
     } finally {
       setConfirmLoading(false);
@@ -423,7 +460,7 @@ export default function DSSPage() {
       setActionMsg({ text: r.data.message, ok: true });
       if (r.data.new_price) setPrice(r.data.new_price.toFixed(2));
     } catch (e: any) {
-      setActionMsg({ text: e?.response?.data?.detail || 'Price update failed', ok: false });
+      setActionMsg({ text: getApiErrorMessage(e, 'Price update failed'), ok: false });
     } finally {
       setPriceLoading(false);
     }
@@ -441,7 +478,7 @@ export default function DSSPage() {
       });
       setBacktest(r.data);
     } catch (e: any) {
-      setError(e?.response?.data?.detail || 'Backtest failed');
+      setError(getApiErrorMessage(e, 'Backtest failed'));
     } finally {
       setBtLoading(false);
     }
@@ -464,7 +501,7 @@ export default function DSSPage() {
       }
       cancelEditReport();
     } catch (e: any) {
-      setError(e?.response?.data?.detail || 'Update report failed');
+      setError(getApiErrorMessage(e, 'Update report failed'));
     }
   };
 
@@ -476,7 +513,7 @@ export default function DSSPage() {
         setHistory(r.data || []);
       }
     } catch (e: any) {
-      setError(e?.response?.data?.detail || 'Delete report failed');
+      setError(getApiErrorMessage(e, 'Delete report failed'));
     }
   };
 
@@ -518,6 +555,58 @@ export default function DSSPage() {
           onConfirm={confirmOrder}
           onCancel={() => setShowConfirmModal(false)}
         />
+      )}
+      {forecastLimitModal && (
+        <div
+          onClick={() => setForecastLimitModal(null)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.45)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 210,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: C.surface,
+              borderRadius: 14,
+              border: `1px solid ${C.border}`,
+              boxShadow: '0 24px 64px rgba(0,0,0,0.18)',
+              width: 460,
+              maxWidth: '90vw',
+              padding: 22,
+            }}
+          >
+            <p style={{ margin: 0, fontSize: 16, fontWeight: 800, color: C.text }}>Forecast Days limit</p>
+            <p style={{ margin: '10px 0 0', fontSize: 13, color: C.muted, lineHeight: 1.55 }}>
+              Forecast Days must be between <b style={{ color: C.text }}>7</b> and <b style={{ color: C.text }}>90</b>.
+              Your input was auto-adjusted from <b style={{ color: C.warn }}>{forecastLimitModal.entered}</b> to{' '}
+              <b style={{ color: C.accent }}>{forecastLimitModal.adjusted}</b>. Please review and click Run DSS Analysis again.
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
+              <button
+                onClick={() => setForecastLimitModal(null)}
+                style={{
+                  padding: '9px 18px',
+                  borderRadius: 8,
+                  border: 'none',
+                  background: C.accent,
+                  color: '#fff',
+                  fontWeight: 700,
+                  fontSize: 13,
+                  cursor: 'pointer',
+                }}
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ── Header ── */}
@@ -592,7 +681,7 @@ export default function DSSPage() {
               <Input label="Current Price ($)" type="number" step="0.01" value={price} onChange={(e: any) => setPrice(e.target.value)} placeholder="e.g. 49.99" />
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 <Input label="Target Days" type="number" value={targetDays} onChange={(e: any) => setTargetDays(e.target.value)} />
-                <Input label="Forecast Days" type="number" value={forecastDays} onChange={(e: any) => setForecastDays(e.target.value)} />
+                <Input label="Forecast Days" type="number" min="7" max="90" value={forecastDays} onChange={(e: any) => setForecastDays(e.target.value)} />
               </div>
               <Input label="Penalty Under-forecast" type="number" step="0.5" value={penaltyUnder} onChange={(e: any) => setPenaltyUnder(e.target.value)} placeholder="5.0" />
             </div>
@@ -616,7 +705,7 @@ export default function DSSPage() {
           {/* Manager actions — shown after analysis */}
           {result && tab === 'analysis' && (
             <Card style={{ animation: 'fadeUp 0.3s ease' }}>
-              <p style={{ margin: '0 0 12px', fontWeight: 700, fontSize: 13, color: C.subtle }}>Manager Actions</p>
+              <p style={{ margin: '0 0 12px', fontWeight: 700, fontSize: 14, color: C.subtle }}>Manager Actions</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {needsOrder ? (
                   <Btn variant="success" disabled={confirmLoading} onClick={openConfirmModal}>
@@ -639,7 +728,7 @@ export default function DSSPage() {
               </div>
               {actionMsg && (
                 <div style={{
-                  marginTop: 10, padding: '10px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600,
+                  marginTop: 10, padding: '10px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600,
                   background: actionMsg.ok ? '#10b98115' : '#ef444415',
                   color: actionMsg.ok ? C.success : C.danger,
                   border: `1px solid ${actionMsg.ok ? C.success : C.danger}33`,
@@ -682,10 +771,10 @@ export default function DSSPage() {
                     <div style={{ padding: '18px 20px', background: C.surface, border: `1px solid ${invColor}33`, borderRadius: 12 }}>
                       <Label>Inventory Action</Label>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 6 }}>
-                        <p style={{ margin: 0, fontSize: 20, fontWeight: 800, color: invColor }}>{inv.action || 'N/A'}</p>
+                        <p style={{ margin: 0, fontSize: 22, fontWeight: 800, color: invColor }}>{inv.action || 'N/A'}</p>
                         <span style={tag(invColor, invColor + '22', inv.urgency ?? '')}>{inv.urgency ?? ''}</span>
                       </div>
-                      <div style={{ marginTop: 10, fontSize: 12, color: C.subtle, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                      <div style={{ marginTop: 10, fontSize: 13, color: C.subtle, display: 'flex', flexDirection: 'column', gap: 3 }}>
                         <span>ROP: <b style={{ color: C.text, fontFamily: 'JetBrains Mono, monospace' }}>{inv.reorder_point ?? 0}</b></span>
                         <span>Safety stock: <b style={{ color: C.text, fontFamily: 'JetBrains Mono, monospace' }}>{inv.safety_stock ?? 0}</b></span>
                         <span>Days of supply: <b style={{ color: C.text, fontFamily: 'JetBrains Mono, monospace' }}>{inv.days_of_supply ?? '—'}</b></span>
@@ -694,12 +783,12 @@ export default function DSSPage() {
 
                     <div style={{ padding: '18px 20px', background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12 }}>
                       <Label>Order Recommendation</Label>
-                      <p style={{ margin: '6px 0 0', fontSize: 24, fontWeight: 800, fontFamily: 'JetBrains Mono, monospace', color: invColor }}>
-                        {suggestedQty} <span style={{ fontSize: 13, fontWeight: 500, color: C.muted }}>units</span>
+                      <p style={{ margin: '6px 0 0', fontSize: 26, fontWeight: 800, fontFamily: 'JetBrains Mono, monospace', color: invColor }}>
+                        {suggestedQty} <span style={{ fontSize: 14, fontWeight: 500, color: C.muted }}>units</span>
                       </p>
-                      <div style={{ marginTop: 10, fontSize: 12, color: C.subtle, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                      <div style={{ marginTop: 10, fontSize: 13, color: C.subtle, display: 'flex', flexDirection: 'column', gap: 3 }}>
                         <span>Stockout risk: <b style={{ color: inv.stockout_probability > 50 ? C.danger : C.success, fontFamily: 'JetBrains Mono, monospace' }}>{inv.stockout_probability ?? 0}%</b></span>
-                        <span>Demand 30d: <b style={{ color: C.text, fontFamily: 'JetBrains Mono, monospace' }}>{inv.expected_demand_30d ?? '—'}</b></span>
+                        <span>Demand {forecastDays}d: <b style={{ color: C.text, fontFamily: 'JetBrains Mono, monospace' }}>{inv.expected_demand_30d ?? '—'}</b></span>
                         <span>Velocity: <b style={{ color: C.text, fontFamily: 'JetBrains Mono, monospace' }}>{inv.current_daily_velocity ?? '—'}/day</b></span>
                       </div>
                     </div>
@@ -707,9 +796,9 @@ export default function DSSPage() {
                     <div style={{ padding: '18px 20px', background: C.surface, border: `1px solid ${priceColor}33`, borderRadius: 12 }}>
                       <Label>Pricing</Label>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 6 }}>
-                        <p style={{ margin: 0, fontSize: 20, fontWeight: 800, color: priceColor }}>{price_adv.action || 'N/A'}</p>
+                        <p style={{ margin: 0, fontSize: 22, fontWeight: 800, color: priceColor }}>{price_adv.action || 'N/A'}</p>
                       </div>
-                      <div style={{ marginTop: 10, fontSize: 12, color: C.subtle, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                      <div style={{ marginTop: 10, fontSize: 13, color: C.subtle, display: 'flex', flexDirection: 'column', gap: 3 }}>
                         <span>Current: <b style={{ color: C.text, fontFamily: 'JetBrains Mono, monospace' }}>${price_adv.current_price?.toFixed(2) ?? '—'}</b></span>
                         <span>Suggested: <b style={{ color: priceColor, fontFamily: 'JetBrains Mono, monospace' }}>${price_adv.suggested_price?.toFixed(2) ?? '—'}</b></span>
                         <span>Change: <b style={{ color: priceColor, fontFamily: 'JetBrains Mono, monospace' }}>{(price_adv.adjustment_pct ?? price_adv.change_percent ?? 0) > 0 ? '+' : ''}{price_adv.adjustment_pct ?? price_adv.change_percent ?? 0}%</b></span>
@@ -722,8 +811,8 @@ export default function DSSPage() {
                     <Card style={{ animation: 'fadeUp 0.35s ease' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                         <div>
-                          <p style={{ margin: 0, fontWeight: 700, fontSize: 14 }}>Demand Forecast</p>
-                          <p style={{ margin: '2px 0 0', fontSize: 12, color: C.muted }}>Prophet + XGBoost hybrid · {forecastSeries.length} days · shaded area = confidence interval</p>
+                          <p style={{ margin: 0, fontWeight: 700, fontSize: 15 }}>Demand Forecast</p>
+                          <p style={{ margin: '2px 0 0', fontSize: 13, color: C.muted }}>Prophet + XGBoost hybrid · {forecastSeries.length} days · shaded area = confidence interval</p>
                         </div>
                         <span style={tag(C.accentLt, C.accent + '18', result.parameters?.penalty_under ? `penalty=${result.parameters.penalty_under}` : 'hybrid')}>
                           {result.parameters?.penalty_under ? `penalty=${result.parameters.penalty_under}` : 'hybrid'}
@@ -738,8 +827,8 @@ export default function DSSPage() {
                             </linearGradient>
                           </defs>
                           <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
-                          <XAxis dataKey="date" tick={{ fontSize: 10, fill: C.muted }} tickLine={false} axisLine={false} interval={Math.floor(forecastSeries.length / 6)} />
-                          <YAxis tick={{ fontSize: 10, fill: C.muted }} tickLine={false} axisLine={false} />
+                          <XAxis dataKey="date" tick={{ fontSize: 11, fill: C.muted }} tickLine={false} axisLine={false} interval={Math.floor(forecastSeries.length / 6)} />
+                          <YAxis tick={{ fontSize: 11, fill: C.muted }} tickLine={false} axisLine={false} />
                           <Tooltip content={<ChartTooltip />} />
                           <Area type="monotone" dataKey="upper" stroke="transparent" fill="url(#grad)" name="Upper" />
                           <Area type="monotone" dataKey="lower" stroke="transparent" fill={C.bg} name="Lower" />
@@ -753,10 +842,10 @@ export default function DSSPage() {
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, animation: 'fadeUp 0.4s ease' }}>
                     <Card>
                       <Label>Pricing Reason</Label>
-                      <p style={{ margin: '8px 0 0', fontSize: 13, color: C.subtle, lineHeight: 1.6 }}>
+                      <p style={{ margin: '8px 0 0', fontSize: 14, color: C.subtle, lineHeight: 1.6 }}>
                         {price_adv.reason || '—'}
                       </p>
-                      <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12 }}>
+                      <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                           <span style={{ color: C.muted }}>Velocity ratio</span>
                           <span style={{ fontFamily: 'JetBrains Mono, monospace', fontWeight: 700 }}>{price_adv.velocity_ratio ?? '—'}x</span>
@@ -770,14 +859,26 @@ export default function DSSPage() {
                           <span style={{ fontFamily: 'JetBrains Mono, monospace', fontWeight: 700 }}>{price_adv.actual_velocity ?? '—'}/day</span>
                         </div>
                         {price_adv.guardrail_note && (
-                          <p style={{ margin: '6px 0 0', color: C.warn, fontSize: 11 }}>⚡ {price_adv.guardrail_note}</p>
+                          <p style={{ margin: '6px 0 0', color: C.warn, fontSize: 12 }}>⚡ {price_adv.guardrail_note}</p>
                         )}
                       </div>
                     </Card>
 
-                    <Card style={{ background: '#f8fafc', border: `1px solid ${C.border}` }}>
+                    <Card style={{ background: '#eef2ff', border: '1px solid #c7d2fe' }}>
                       <Label>AI Narrative</Label>
-                      <p style={{ margin: '8px 0 0', fontSize: 12, color: C.subtle, lineHeight: 1.8, whiteSpace: 'pre-line', fontFamily: 'JetBrains Mono, monospace' }}>
+                      <p style={{
+                        margin: '8px 0 0',
+                        padding: '10px 12px',
+                        borderRadius: 8,
+                        background: 'rgba(255,255,255,0.75)',
+                        border: '1px solid #dbeafe',
+                        fontSize: 13,
+                        color: '#334155',
+                        lineHeight: 1.8,
+                        whiteSpace: 'pre-line',
+                        fontFamily: 'JetBrains Mono, monospace',
+                        fontWeight: 600,
+                      }}>
                         {result.ai_reasoning || '—'}
                       </p>
                     </Card>

@@ -84,6 +84,7 @@ export default function InventoryPage() {
   const [importProgress, setImportProgress] = useState(null); // {step, pct, created, updated, total}
   const [importResult, setImportResult]     = useState(null); // {products_imported, records_imported, elapsed}
   const [importingFileLabel, setImportingFileLabel] = useState("");
+  const [importDisclaimerOpen, setImportDisclaimerOpen] = useState(false);
   const importInputRef = useRef(null);
   const esRef          = useRef(null); // SSE EventSource (used for product catalog import)
 
@@ -663,7 +664,15 @@ export default function InventoryPage() {
         {/* ─── Import Tab ────────────────────────────────────────── */}
         {tab === "import" && (
           <div style={{ ...S.card, maxWidth: 560 }}>
-            <h3 style={{ fontSize: 18, fontWeight: 700, margin: "0 0 4px" }}>Import Sales Data</h3>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 4 }}>
+              <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>Import Sales Data</h3>
+              <button
+                onClick={() => setImportDisclaimerOpen(true)}
+                style={{ ...S.secondaryBtn, padding: "6px 10px", fontSize: 12 }}
+              >
+                <I.Alert /> Disclaimer
+              </button>
+            </div>
             <p style={{ fontSize: 13, color: "#64748b", margin: "0 0 24px" }}>
               Upload CSV sales exports. Supports multiple retail dataset formats, including paired-file sources.
             </p>
@@ -794,6 +803,38 @@ export default function InventoryPage() {
           </div>
         )}
       </main>
+
+      {/* ─── Import Disclaimer Modal ───────────────────────────────── */}
+      {importDisclaimerOpen && (
+        <div style={S.overlay} onClick={() => setImportDisclaimerOpen(false)}>
+          <div
+            style={{ ...S.modal, maxWidth: 640, padding: 32, borderRadius: 18 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <h3 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>Import Disclaimer</h3>
+              <button
+                onClick={() => setImportDisclaimerOpen(false)}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8" }}
+              >
+                <I.X />
+              </button>
+            </div>
+            <p style={{ margin: "0 0 12px", fontSize: 16, color: "#475569", lineHeight: 1.7 }}>
+              Importing the same dataset multiple times does <strong>not</strong> create duplicate products,
+              but it <strong>adds</strong> sales quantities to existing product/date records.
+            </p>
+            <p style={{ margin: 0, fontSize: 16, color: "#475569", lineHeight: 1.7 }}>
+              In short: re-importing identical files can inflate sales totals and affect forecasts.
+            </p>
+            <div style={{ marginTop: 20, display: "flex", justifyContent: "flex-end" }}>
+              <button onClick={() => setImportDisclaimerOpen(false)} style={{ ...S.primaryBtn, padding: "10px 16px", fontSize: 14 }}>
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ─── Stock In / Out Modal ─────────────────────────────────── */}
       {stockModal && (

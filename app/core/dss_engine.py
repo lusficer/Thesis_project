@@ -252,17 +252,17 @@ class DSSEngine:
 
         if action == "ORDER_NOW":
             lines.append(
-                f"⚠️ URGENT: Stockout risk at {stockout:.1f}%. "
+                f"URGENT: Stockout risk at {stockout:.1f}%. "
                 f"Reorder {inv_advice['suggested_order_qty']} units immediately."
             )
         elif action == "LOW_STOCK":
             lines.append(
-                f"⚠️ LOW STOCK: Stockout risk at {stockout:.1f}%. "
+                f"LOW STOCK: Stockout risk at {stockout:.1f}%. "
                 f"Consider ordering {inv_advice['suggested_order_qty']} units."
             )
         else:
             lines.append(
-                f"✅ STOCK OK: Stockout risk at {stockout:.1f}%. No immediate action needed."
+                f"STOCK OK: Stockout risk at {stockout:.1f}%. No immediate action needed."
             )
 
         if abs(price_change) > 0.5:

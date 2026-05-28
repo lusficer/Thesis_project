@@ -16,7 +16,6 @@ import enum
 from app.database import Base
 
 
-# ─── Enums ───────────────────────────────────────────────────────────
 
 class UserRole(str, enum.Enum):
     ADMIN = "admin"
@@ -40,7 +39,6 @@ class StockStatus(str, enum.Enum):
     OUT_OF_STOCK = "out_of_stock"
 
 
-# ─── Users ───────────────────────────────────────────────────────────
 
 class User(Base):
     __tablename__ = "users"
@@ -55,7 +53,6 @@ class User(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
-# ─── Categories (hierarchical) ──────────────────────────────────────
 
 class Category(Base):
     __tablename__ = "categories"
@@ -71,7 +68,6 @@ class Category(Base):
     products = relationship("Product", back_populates="category")
 
 
-# ─── Products ────────────────────────────────────────────────────────
 
 class Product(Base):
     __tablename__ = "products"
@@ -102,7 +98,6 @@ class Product(Base):
     )
 
 
-# ─── Inventory ───────────────────────────────────────────────────────
 
 class Inventory(Base):
     __tablename__ = "inventory"
@@ -125,7 +120,6 @@ class Inventory(Base):
         return StockStatus.IN_STOCK
 
 
-# ─── Inventory Transactions (audit trail) ────────────────────────────
 
 class InventoryTransaction(Base):
     __tablename__ = "inventory_transactions"
@@ -151,7 +145,6 @@ class InventoryTransaction(Base):
     )
 
 
-# ─── Sales History ───────────────────────────────────────────────────
 
 class SalesHistory(Base):
     __tablename__ = "sales_history"
@@ -171,7 +164,6 @@ class SalesHistory(Base):
     )
 
 
-# ─── Suppliers ───────────────────────────────────────────────────────
 
 class Supplier(Base):
     __tablename__ = "suppliers"
@@ -207,7 +199,6 @@ class ProductSupplier(Base):
     )
 
 
-# ─── Notifications ──────────────────────────────────────────────────
 
 class NotificationType(str, enum.Enum):
     LOW_STOCK = "low_stock"

@@ -9,7 +9,6 @@ from pydantic import BaseModel, Field, ConfigDict, model_validator
 from enum import Enum
 
 
-# ─── Enums ───────────────────────────────────────────────────────────
 
 class StockStatusEnum(str, Enum):
     IN_STOCK = "in_stock"
@@ -27,7 +26,6 @@ class TransactionTypeEnum(str, Enum):
     LOSS = "LOSS"
 
 
-# ─── Category ────────────────────────────────────────────────────────
 
 class CategoryCreate(BaseModel):
     name: str
@@ -43,7 +41,6 @@ class CategoryResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-# ─── Product ─────────────────────────────────────────────────────────
 
 class ProductCreate(BaseModel):
     sku: str = Field(..., max_length=100)
@@ -129,7 +126,6 @@ class BulkDeleteResponse(BaseModel):
     deleted: int
 
 
-# ─── Inventory ───────────────────────────────────────────────────────
 
 class StockInRequest(BaseModel):
     product_id: int
@@ -178,7 +174,6 @@ class InventoryAlertItem(BaseModel):
     days_until_stockout: Optional[int] = None
 
 
-# ─── Sales ───────────────────────────────────────────────────────────
 
 class SalesImportResponse(BaseModel):
     products_imported: int
@@ -194,7 +189,6 @@ class DailySalesResponse(BaseModel):
     revenue: float
 
 
-# ─── Dashboard ───────────────────────────────────────────────────────
 
 class DashboardSummary(BaseModel):
     total_products: int
@@ -212,7 +206,6 @@ class DashboardSummary(BaseModel):
     low_stock_alerts: Optional[List[dict]] = None
 
 
-# ─── DSS ─────────────────────────────────────────────────────────────
 
 class DSSRunRequest(BaseModel):
     product_id: int
@@ -244,7 +237,6 @@ class DSSReportUpdate(BaseModel):
     ai_reasoning: Optional[str] = None
 
 
-# ─── Notifications ───────────────────────────────────────────────────
 
 class NotificationResponse(BaseModel):
     id: int
@@ -266,7 +258,6 @@ class NotificationListResponse(BaseModel):
     unread_count: int
 
 
-# ─── DSS Actions (Phase 3 Integration) ──────────────────────────────
 
 class DSSConfirmOrderRequest(BaseModel):
     """Manager confirms ORDER_NOW recommendation → auto stock-in."""
@@ -321,7 +312,6 @@ class DSSScanAllRequest(BaseModel):
     min_sales_days: int = Field(default=30, ge=1, le=365)
 
 
-# ─── Auth ────────────────────────────────────────────────────────────
 
 class UserLogin(BaseModel):
     username: Optional[str] = None

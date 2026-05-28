@@ -43,15 +43,12 @@ def run_product_backtest(
     df["y"] = pd.to_numeric(df["y"], errors="coerce").fillna(0).clip(lower=0)
     df = df.sort_values("ds").drop_duplicates("ds").reset_index(drop=True)
 
-    # ── Test period: last test_days rows ───────────────────────────────
     sim_data = df.tail(test_days).reset_index(drop=True)
     daily_demand = sim_data["y"].values
     total = len(daily_demand)
 
-    # ── Train period: everything before test ───────────────────────────
     train_df = df.head(max(30, len(df) - test_days))
 
-    # ── Pre-compute demand stats ───────────────────────────────────────
     avg_demand = float(np.mean(daily_demand))
     std_demand = float(np.std(daily_demand))
     start_stock = int(initial_stock) if initial_stock is not None else max(1, int(avg_demand * 30))
@@ -145,7 +142,6 @@ def run_product_backtest(
             oracle_orders[deliver_day] += order_qty
         _sim_stock = max(0.0, _sim_stock - int(daily_demand[i]))
 
-    # ── Simulation loop ────────────────────────────────────────────────
     dss_stock = float(start_stock)
     naive_stock = float(start_stock)
 

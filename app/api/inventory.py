@@ -59,7 +59,6 @@ def _build_txn_response(txn: InventoryTransaction, product_name: str, sku: str) 
     )
 
 
-# ─── Stock In ────────────────────────────────────────────────────────
 
 @router.post("/stock-in", response_model=InventoryTransactionResponse, status_code=201)
 def stock_in(data: StockInRequest, db: Session = Depends(get_db)):
@@ -86,7 +85,6 @@ def stock_in(data: StockInRequest, db: Session = Depends(get_db)):
     return _build_txn_response(txn, product.name if product else None, product.sku if product else None)
 
 
-# ─── Stock Out ───────────────────────────────────────────────────────
 
 @router.post("/stock-out", response_model=InventoryTransactionResponse, status_code=201)
 def stock_out(data: StockOutRequest, db: Session = Depends(get_db)):
@@ -161,7 +159,6 @@ def stock_out(data: StockOutRequest, db: Session = Depends(get_db)):
     return _build_txn_response(txn, product.name if product else None, product.sku if product else None)
 
 
-# ─── Transaction History (per product) ──────────────────────────────
 
 @router.get("/{product_id}/transactions", response_model=list[InventoryTransactionResponse])
 def get_transactions(
@@ -189,7 +186,6 @@ def get_transactions(
     return [_build_txn_response(t, p_name, p_sku) for t in txns]
 
 
-# ─── All Transactions (inventory dashboard view) ─────────────────────
 
 @router.get("/transactions", response_model=list[InventoryTransactionResponse])
 def get_all_transactions(
@@ -207,7 +203,6 @@ def get_all_transactions(
     return [_build_txn_response(txn, name, sku) for txn, name, sku in rows]
 
 
-# ─── Low Stock Alerts ───────────────────────────────────────────────
 
 @router.get("/alerts", response_model=list[InventoryAlertItem])
 def get_alerts(db: Session = Depends(get_db)):

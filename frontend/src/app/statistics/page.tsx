@@ -18,7 +18,6 @@ import {
   Pie,
 } from 'recharts';
 
-// ─── Types ────────────────────────────────────────────────────────────
 interface PortfolioItem {
   product_id: number;
   product_name: string;
@@ -86,7 +85,6 @@ interface ModelPerformance {
   };
 }
 
-// ─── Design tokens (mirror of /dss page) ──────────────────────────────
 const C = {
   bg:       '#f8f9fb',
   surface:  '#ffffff',
@@ -156,7 +154,6 @@ const formatSigned = (n: number | null): string => {
   return (n > 0 ? '+' : '') + n.toFixed(1) + '%';
 };
 
-// ─── Utilities ────────────────────────────────────────────────────────
 function timeAgo(iso: string | null): string {
   if (!iso) return 'never';
   const then = new Date(iso).getTime();
@@ -182,7 +179,6 @@ function renderMarkdown(md: string): string {
     .replace(/\n/g, '<br/>');
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────
 export default function StatisticsPage() {
   const router = useRouter();
 
@@ -318,7 +314,6 @@ export default function StatisticsPage() {
     if (!exists) setPmProductId(null);
   }, [pmProductId, pmProductOptions]);
 
-  // ─── Recompute trigger ──────────────────────────────────────────────
   const handleRecompute = useCallback(async () => {
     if (recomputing) return;
     setRecomputing(true);
@@ -412,7 +407,6 @@ export default function StatisticsPage() {
     });
   }, [pmReportMarkdown]);
 
-  // ─── Render ─────────────────────────────────────────────────────────
 
   // Header (always visible)
   const Header = (

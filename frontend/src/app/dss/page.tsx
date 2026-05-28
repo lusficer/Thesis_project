@@ -8,7 +8,6 @@ import {
 } from 'recharts';
 import { productsAPI, dssAPI, salesAPI } from '@/lib/api';
 
-// ─── Types ────────────────────────────────────────────────────────────
 interface Product {
   id: number; sku: string; name: string;
   current_stock?: number; current_price?: number;
@@ -22,7 +21,6 @@ interface ConfirmOrderForm {
   notes: string;
 }
 
-// ─── Design tokens ────────────────────────────────────────────────────
 const C = {
   bg:       '#f8f9fb',
   surface:  '#ffffff',
@@ -82,7 +80,23 @@ const getApiErrorMessage = (error: any, fallback: string): string => {
   return detailMessage || error?.message || fallback;
 };
 
-// ─── Tiny components ──────────────────────────────────────────────────
+const formatVietnamTime = (iso?: string) => {
+  if (!iso) return '—';
+  const hasTimezone = /[zZ]|[+-]\d{2}:\d{2}$/.test(iso);
+  const normalized = hasTimezone ? iso : `${iso}Z`;
+  const dt = new Date(normalized);
+  if (Number.isNaN(dt.getTime())) return String(iso);
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(dt).replace(',', '');
+};
+
 const Card = ({ children, style = {} }: any) => (
   <div style={{
     background: C.surface, border: `1px solid ${C.border}`,
@@ -156,7 +170,6 @@ const ChartTooltip = ({ active, payload, label }: any) => {
   );
 };
 
-// ─── Confirm Order Modal ───────────────────────────────────────────────
 function ConfirmOrderModal({
   suggestedQty,
   onConfirm,
@@ -305,7 +318,6 @@ function ConfirmOrderModal({
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────
 export default function DSSPage() {
   const searchParams = useSearchParams();
   const productIdFromUrl = searchParams.get('product_id');
@@ -535,7 +547,6 @@ export default function DSSPage() {
   const suggestedQty = inv.suggested_order_qty ?? inv.qty_to_order ?? 0;
   const needsOrder   = inv.action === 'ORDER_NOW' || inv.action === 'LOW_STOCK';
 
-  // ── Render ────────────────────────────────────────────────────────
   return (
     <div style={{ background: C.bg, minHeight: '100vh', color: C.text, fontFamily: "'DM Sans', system-ui, sans-serif", padding: '28px 32px' }}>
       <style>{`
@@ -547,7 +558,6 @@ export default function DSSPage() {
         select option { background: ${C.surface}; color: ${C.text}; }
       `}</style>
 
-      {/* ── Confirm Order Modal ── */}
       {showConfirmModal && (
         <ConfirmOrderModal
           suggestedQty={suggestedQty}
@@ -609,7 +619,6 @@ export default function DSSPage() {
         </div>
       )}
 
-      {/* ── Header ── */}
       <div style={{ marginBottom: 28, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
         <div>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, padding: '6px 12px', borderRadius: 999, background: '#eef2ff', border: `1px solid ${C.border}` }}>
@@ -636,7 +645,6 @@ export default function DSSPage() {
 
       <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 20 }}>
 
-        {/* ── LEFT: Product + Params ── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <Card>
             <Label>Select Product</Label>
@@ -741,7 +749,6 @@ export default function DSSPage() {
           )}
         </div>
 
-        {/* ── RIGHT: Main content ── */}
         <div>
 
           {/* ══ TAB: ANALYSIS ══ */}
@@ -1085,7 +1092,7 @@ export default function DSSPage() {
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <div>
                           <p style={{ margin: 0, fontWeight: 700, fontSize: 13 }}>Report #{r.id}</p>
-                          <p style={{ margin: '2px 0 0', fontSize: 11, color: C.muted }}>{r.generated_at?.slice(0, 16).replace('T', ' ')}</p>
+                          <p style={{ margin: '2px 0 0', fontSize: 11, color: C.muted }}>{formatVietnamTime(r.generated_at)}</p>
                         </div>
                         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                           <span style={tag(ic, ic+'22', inv_h.action || 'N/A')}>{inv_h.action || 'N/A'}</span>

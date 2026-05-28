@@ -1,0 +1,93 @@
+Dataset,Product,Model,Train_Days,Test_Days,MAE,RMSE,MAPE,Dir_Accuracy,Under_Forecast_Pct
+India Sales,Saree,Prophet-Only,290,73,2.5124,3.9635,73.22,45.83,38.4
+India Sales,Saree,XGBoost-Only,290,73,2.2007,4.0576,79.98,44.44,39.7
+India Sales,Saree,Hybrid,290,73,4.3336,6.0536,124.04,43.06,23.3
+India Sales,Saree,Hybrid (no asym.),290,73,4.5535,6.34,130.38,45.83,26.0
+India Sales,Hankerchief,Prophet-Only,291,73,3.4006,4.4337,53.31,65.28,35.6
+India Sales,Hankerchief,XGBoost-Only,291,73,6.6263,11.25,167.54,40.28,37.0
+India Sales,Hankerchief,Hybrid,291,73,3.3643,4.7451,62.95,62.5,35.6
+India Sales,Hankerchief,Hybrid (no asym.),291,73,5.4226,8.8925,156.15,54.17,42.5
+India Sales,Stole,Prophet-Only,288,73,3.4076,4.7447,59.85,65.28,38.4
+India Sales,Stole,XGBoost-Only,288,73,3.4037,5.0893,77.38,55.56,50.7
+India Sales,Stole,Hybrid,288,73,3.6008,5.2159,99.36,61.11,46.6
+India Sales,Stole,Hybrid (no asym.),288,73,3.4905,4.8264,81.06,62.5,41.1
+UK Retail,23166,Prophet-Only,260,66,207.6787,562.4,,86.15,0.0
+UK Retail,23166,XGBoost-Only,260,66,0.0,0.0,,100.0,0.0
+UK Retail,23166,Hybrid,260,66,0.0,0.0,,100.0,0.0
+UK Retail,23166,Hybrid (no asym.),260,66,0.0,0.0,,100.0,0.0
+UK Retail,37410,Prophet-Only,102,26,0.9051,2.3393,,84.0,0.0
+UK Retail,37410,XGBoost-Only,102,26,0.0,0.0,,100.0,0.0
+UK Retail,37410,Hybrid,102,26,0.0,0.0,,100.0,0.0
+UK Retail,37410,Hybrid (no asym.),102,26,0.0,0.0,,100.0,0.0
+UK Retail,84077,Prophet-Only,590,148,0.2337,0.3581,,66.67,0.0
+UK Retail,84077,XGBoost-Only,590,148,0.0,0.0,,85.71,0.0
+UK Retail,84077,Hybrid,590,148,0.0973,0.103,,20.41,0.0
+UK Retail,84077,Hybrid (no asym.),590,148,0.0902,0.0994,,25.85,0.0
+UK Retail,23084,Prophet-Only,170,43,5.6041,9.0046,44.84,30.95,4.7
+UK Retail,23084,XGBoost-Only,170,43,0.3256,1.3294,100.0,54.76,7.0
+UK Retail,23084,Hybrid,170,43,1.2534,1.5215,72.34,30.95,7.0
+UK Retail,23084,Hybrid (no asym.),170,43,1.1604,1.4743,74.67,42.86,7.0
+UK Retail,85099B,Prophet-Only,591,148,0.1107,0.8282,100.0,70.75,0.7
+UK Retail,85099B,XGBoost-Only,591,148,0.1579,0.987,100.0,70.75,0.7
+UK Retail,85099B,Hybrid,591,148,0.2589,1.4248,100.0,96.6,0.7
+UK Retail,85099B,Hybrid (no asym.),591,148,0.1559,0.9822,100.0,96.6,0.7
+Retail Transactions,Toothpaste,Prophet-Only,1280,320,0.1549,0.4066,97.73,28.84,0.3
+Retail Transactions,Toothpaste,XGBoost-Only,1280,320,0.0219,0.3913,100.0,85.27,0.3
+Retail Transactions,Toothpaste,Hybrid,1280,320,0.142,0.4052,98.59,24.14,0.3
+Retail Transactions,Toothpaste,Hybrid (no asym.),1280,320,0.1815,0.4277,97.52,27.59,0.3
+Retail Transactions,Jam,Prophet-Only,1280,320,0.0056,0.0147,,85.58,0.0
+Retail Transactions,Jam,XGBoost-Only,1280,320,0.0,0.0,,100.0,0.0
+Retail Transactions,Jam,Hybrid,1280,320,0.003,0.0034,,50.47,0.0
+Retail Transactions,Jam,Hybrid (no asym.),1280,320,0.0021,0.0025,,57.37,0.0
+Retail Transactions,Ice Cream,Prophet-Only,1280,320,0.0334,0.559,100.0,71.16,0.3
+Retail Transactions,Ice Cream,XGBoost-Only,1280,320,0.0355,0.56,100.0,93.73,0.3
+Retail Transactions,Ice Cream,Hybrid,1280,320,0.0467,0.5725,100.0,98.12,0.3
+Retail Transactions,Ice Cream,Hybrid (no asym.),1280,320,0.0354,0.56,100.0,98.12,0.3
+Retail Transactions,Soap,Prophet-Only,1280,320,0.0052,0.0137,,85.89,0.0
+Retail Transactions,Soap,XGBoost-Only,1280,320,0.0114,0.0907,,94.04,0.0
+Retail Transactions,Soap,Hybrid,1280,320,0.0413,0.3307,,98.43,0.0
+Retail Transactions,Soap,Hybrid (no asym.),1280,320,0.0112,0.0893,,98.43,0.0
+Retail Transactions,Air Freshener,Prophet-Only,1280,320,0.002,0.0054,,85.58,0.0
+Retail Transactions,Air Freshener,XGBoost-Only,1280,320,0.0,0.0,,100.0,0.0
+Retail Transactions,Air Freshener,Hybrid,1280,320,0.0005,0.0005,,61.13,0.0
+Retail Transactions,Air Freshener,Hybrid (no asym.),1280,320,0.0003,0.0004,,49.22,0.0
+FMCG Sales 2023-24,Small Electronics,Prophet-Only,584,147,26.9029,35.5098,48.32,56.16,83.7
+FMCG Sales 2023-24,Small Electronics,XGBoost-Only,584,147,13.8702,17.879,33.05,52.05,38.1
+FMCG Sales 2023-24,Small Electronics,Hybrid,584,147,19.6335,24.6252,42.2,52.74,92.5
+FMCG Sales 2023-24,Small Electronics,Hybrid (no asym.),584,147,16.4795,21.6855,34.16,52.74,85.0
+FMCG Sales 2023-24,Sportswear,Prophet-Only,584,147,27.9644,37.3012,48.02,52.05,89.1
+FMCG Sales 2023-24,Sportswear,XGBoost-Only,584,147,12.7619,18.2402,27.29,58.22,59.2
+FMCG Sales 2023-24,Sportswear,Hybrid,584,147,32.8472,40.5907,59.88,49.32,95.9
+FMCG Sales 2023-24,Sportswear,Hybrid (no asym.),584,147,22.9585,29.2662,43.67,50.68,95.9
+FMCG Sales 2023-24,Men's Wear,Prophet-Only,584,147,25.7051,35.9357,47.04,51.37,82.3
+FMCG Sales 2023-24,Men's Wear,XGBoost-Only,584,147,12.4485,19.2645,26.86,55.48,56.5
+FMCG Sales 2023-24,Men's Wear,Hybrid,584,147,20.8609,28.5288,42.15,51.37,91.8
+FMCG Sales 2023-24,Men's Wear,Hybrid (no asym.),584,147,20.8058,27.8485,42.42,54.11,92.5
+FMCG Sales 2023-24,Footwear,Prophet-Only,584,147,27.8788,35.9093,50.72,50.0,89.8
+FMCG Sales 2023-24,Footwear,XGBoost-Only,584,147,12.8456,17.0217,32.94,60.96,29.9
+FMCG Sales 2023-24,Footwear,Hybrid,584,147,21.0435,26.3874,45.61,47.95,90.5
+FMCG Sales 2023-24,Footwear,Hybrid (no asym.),584,147,21.3656,27.768,43.28,48.63,89.8
+FMCG Sales 2023-24,Women's Wear,Prophet-Only,584,147,25.4341,34.4266,49.36,52.74,85.7
+FMCG Sales 2023-24,Women's Wear,XGBoost-Only,584,147,17.3999,24.1076,37.32,51.37,90.5
+FMCG Sales 2023-24,Women's Wear,Hybrid,584,147,28.5223,35.4545,60.31,56.85,95.2
+FMCG Sales 2023-24,Women's Wear,Hybrid (no asym.),584,147,24.9474,31.4844,52.32,61.64,96.6
+Favorita Ecuador,GROCERY I,Prophet-Only,1350,338,33282.9501,52341.4177,54.44,84.57,67.2
+Favorita Ecuador,GROCERY I,XGBoost-Only,1350,338,39711.5356,57093.9288,61.37,83.68,77.5
+Favorita Ecuador,GROCERY I,Hybrid,1350,338,36058.6975,53313.4586,58.76,76.56,68.0
+Favorita Ecuador,GROCERY I,Hybrid (no asym.),1350,338,30873.7467,48434.4623,55.05,78.64,69.5
+Favorita Ecuador,BEVERAGES,Prophet-Only,1350,338,36357.33,47059.2844,31.82,86.05,86.7
+Favorita Ecuador,BEVERAGES,XGBoost-Only,1350,338,28852.0832,40565.9571,35.68,84.87,80.8
+Favorita Ecuador,BEVERAGES,Hybrid,1350,338,34087.2908,44615.3148,33.34,82.79,77.2
+Favorita Ecuador,BEVERAGES,Hybrid (no asym.),1350,338,36673.0978,46402.9977,36.05,86.35,78.7
+Favorita Ecuador,PRODUCE,Prophet-Only,1291,323,18907.7025,24308.7234,42.76,91.93,22.3
+Favorita Ecuador,PRODUCE,XGBoost-Only,1291,323,18947.3832,27192.7355,37.73,89.44,69.3
+Favorita Ecuador,PRODUCE,Hybrid,1291,323,33691.5042,39514.0263,60.54,70.5,8.7
+Favorita Ecuador,PRODUCE,Hybrid (no asym.),1291,323,28642.8328,34691.7358,57.19,76.71,10.2
+Favorita Ecuador,CLEANING,Prophet-Only,1350,338,10166.9364,14982.1443,68.53,81.31,73.1
+Favorita Ecuador,CLEANING,XGBoost-Only,1350,338,14710.7992,19182.7474,81.78,80.42,84.0
+Favorita Ecuador,CLEANING,Hybrid,1350,338,10650.1656,15513.8477,77.17,72.7,75.1
+Favorita Ecuador,CLEANING,Hybrid (no asym.),1350,338,11112.4374,15957.7179,76.65,74.78,80.8
+Favorita Ecuador,DAIRY,Prophet-Only,1350,338,5510.6983,8402.849,39.09,93.18,43.5
+Favorita Ecuador,DAIRY,XGBoost-Only,1350,338,7157.048,10393.2425,44.79,90.8,84.9
+Favorita Ecuador,DAIRY,Hybrid,1350,338,5400.5625,8592.7426,42.29,89.61,34.6
+Favorita Ecuador,DAIRY,Hybrid (no asym.),1350,338,5469.8595,9120.2749,42.2,91.39,36.4

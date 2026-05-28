@@ -1,9 +1,7 @@
 """
-═══════════════════════════════════════════════════════════════
   ThesisHybridModel — Two-Stage Forecasting
   Stage 1: Prophet (trend + seasonality)
   Stage 2: XGBoost (residual correction with asymmetric loss)
-═══════════════════════════════════════════════════════════════
 """
 
 import warnings
@@ -12,14 +10,12 @@ import pandas as pd
 
 warnings.filterwarnings("ignore")
 
-# ── Prophet ──────────────────────────────────────────────────────────
 try:
     from prophet import Prophet
     PROPHET_AVAILABLE = True
 except ImportError:
     PROPHET_AVAILABLE = False
 
-# ── XGBoost ──────────────────────────────────────────────────────────
 try:
     import xgboost as xgb
     XGBOOST_AVAILABLE = True
@@ -28,10 +24,8 @@ except ImportError:
 
 MODEL_VERSION = "hybrid_asym_v1"
 
-# ─────────────────────────────────────────────────────────────────────
 # Custom asymmetric loss for XGBoost
 # Under-forecasting penalised more heavily than over-forecasting
-# ─────────────────────────────────────────────────────────────────────
 
 def _asymmetric_loss_grad_hess(penalty_under: float = 5.0, penalty_over: float = 1.0):
     """
@@ -58,9 +52,7 @@ def _asymmetric_loss_grad_hess(penalty_under: float = 5.0, penalty_over: float =
     return obj
 
 
-# ─────────────────────────────────────────────────────────────────────
 # Feature engineering for residual model
-# ─────────────────────────────────────────────────────────────────────
 
 def _build_features(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -97,9 +89,7 @@ FEATURE_COLS = ["day_of_week", "is_weekend", "month", "day_of_year",
                 "rolling_mean_7", "lag_7", "lag_14"]
 
 
-# ─────────────────────────────────────────────────────────────────────
 # ThesisHybridModel
-# ─────────────────────────────────────────────────────────────────────
 
 class ThesisHybridModel:
     """
@@ -139,7 +129,6 @@ class ThesisHybridModel:
         self._is_fitted       = False
         self._train_df        = None   # kept for rolling stats at predict time
 
-    # ── Public API ───────────────────────────────────────────────────
 
     def fit(self, df: pd.DataFrame) -> "ThesisHybridModel":
         """
@@ -166,7 +155,6 @@ class ThesisHybridModel:
 
         self._train_df = df.copy()
 
-        # ── STAGE 1: Prophet ─────────────────────────────────────────
         self._prophet_model = self._fit_prophet(df)
 
         # In-sample Prophet forecast to get residuals
@@ -180,7 +168,6 @@ class ThesisHybridModel:
         merged["prophet_yhat"] = merged["yhat"].fillna(merged["y"].mean())
         merged["residual"]     = merged["y"] - merged["prophet_yhat"]
 
-        # ── STAGE 2: XGBoost residual correction ─────────────────────
         if XGBOOST_AVAILABLE and len(merged) >= self.MIN_XGB_ROWS:
             self._xgb_model   = self._fit_xgboost(merged)
             self._xgb_enabled = True
@@ -210,7 +197,6 @@ class ThesisHybridModel:
         if not self._is_fitted:
             raise RuntimeError("Model is not fitted yet. Call fit() first.")
 
-        # ── Prophet future dataframe ─────────────────────────────────
         future_df = self._prophet_model.make_future_dataframe(periods=future_days)
         prophet_fc = self._prophet_model.predict(future_df)
 
@@ -226,21 +212,18 @@ class ThesisHybridModel:
             # Edge-case: return empty with correct schema
             return pd.DataFrame(columns=["ds", "yhat", "yhat_lower", "yhat_upper"])
 
-        # ── XGBoost residual correction ──────────────────────────────
         if self._xgb_enabled and self._xgb_model is not None:
             residual_correction = self._predict_residuals(future_fc)
             future_fc["yhat"]        += residual_correction
             future_fc["yhat_lower"]  += residual_correction
             future_fc["yhat_upper"]  += residual_correction
 
-        # ── Clip negatives ───────────────────────────────────────────
         future_fc["yhat"]       = future_fc["yhat"].clip(lower=0)
         future_fc["yhat_lower"] = future_fc["yhat_lower"].clip(lower=0)
         future_fc["yhat_upper"] = future_fc["yhat_upper"].clip(lower=0)
 
         return future_fc[["ds", "yhat", "yhat_lower", "yhat_upper"]].reset_index(drop=True)
 
-    # ── Model metadata ───────────────────────────────────────────────
 
     @property
     def mode(self) -> str:
@@ -257,7 +240,6 @@ class ThesisHybridModel:
             "mode":             self.mode,
         }
 
-    # ── Private helpers ───────────────────────────────────────────────
 
     @staticmethod
     def _validate_and_clean(df: pd.DataFrame) -> pd.DataFrame:

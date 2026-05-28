@@ -35,7 +35,6 @@ export default function Header({ active = "Dashboard" }) {
   const notifRef   = useRef(null);
   const userRef    = useRef(null);
 
-  // ── Fetch user ────────────────────────────────────────────────────
   useEffect(() => {
     const authed = isAuthenticated();
     setIsAuthed(authed);
@@ -53,7 +52,6 @@ export default function Header({ active = "Dashboard" }) {
       .catch(() => { setUser(null); });
   }, []);
 
-  // ── Fetch notifications ───────────────────────────────────────────
   useEffect(() => {
     if (!isAuthed) return;
 
@@ -70,7 +68,6 @@ export default function Header({ active = "Dashboard" }) {
       });
   }, [isAuthed]);
 
-  // ── Close dropdowns on outside click ─────────────────────────────
   useEffect(() => {
     const handler = (e) => {
       if (notifRef.current && !notifRef.current.contains(e.target))  setShowNotifs(false);
@@ -136,7 +133,6 @@ export default function Header({ active = "Dashboard" }) {
 
           {isAuthed && (
           <>
-          {/* ── Notifications Bell ── */}
           <div ref={notifRef} style={{ position: "relative", marginLeft: 8 }}>
             <button
               onClick={() => { setShowNotifs(v => !v); setShowUserMenu(false); }}
@@ -226,7 +222,6 @@ export default function Header({ active = "Dashboard" }) {
             )}
           </div>
 
-          {/* ── User Avatar + Dropdown ── */}
           <div ref={userRef} style={{ position: "relative", marginLeft: 8 }}>
             <button
               onClick={() => { setShowUserMenu(v => !v); setShowNotifs(false); }}

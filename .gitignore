@@ -197,15 +197,7 @@ temp/
 .tmp/
 .temp/
 
-# Benchmark outputs
-benchmark_output/
-*.benchmark
-
 # ─── AI Documentation (Agent Files) ─────────
-# AI-specific documentation files for development context
-# These files reduce token usage when working with AI assistants
-# Auto-generated and frequently updated - should not be committed
-
 # Core context files
 CLAUDE.md
 BACKEND_CONTEXT.md

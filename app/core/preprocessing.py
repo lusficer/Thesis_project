@@ -31,7 +31,6 @@ import pandas as pd
 warnings.filterwarnings("ignore")
 
 
-# ─── Helpers ──────────────────────────────────────────────────────────────────
 
 def _col_set(df: pd.DataFrame) -> set:
     return {c.strip().lower() for c in df.columns}
@@ -58,7 +57,6 @@ def _parse_date_flexible(series: pd.Series, dayfirst: bool = False) -> pd.Series
     return result
 
 
-# ─── Format detection ─────────────────────────────────────────────────────────
 
 def _detect_format(df: pd.DataFrame) -> str:
     cols = _col_set(df)
@@ -91,7 +89,6 @@ def _detect_format(df: pd.DataFrame) -> str:
     return "generic"
 
 
-# ─── Per-format parsers ───────────────────────────────────────────────────────
 
 def _parse_olist(df: pd.DataFrame) -> pd.DataFrame:
     cm = _col_map(df)
@@ -144,19 +141,15 @@ def _parse_uk_retail(df: pd.DataFrame) -> pd.DataFrame:
     out["quantity"]  = pd.to_numeric(df[qty_col], errors="coerce") if qty_col else 0
     out["order_purchase_timestamp"] = _parse_date_flexible(df[date_col], dayfirst=True) if date_col else pd.NaT
 
-    # ── Filter 1: positive quantity only ──────────────────────────────
     out = out[out["quantity"] > 0].copy()
 
-    # ── Filter 2: remove cancelled/credit StockCodes (start with C + digits)
     import re as _re
     cancelled_mask = out["_sku"].str.match(r"^C\d+", na=False)
     out = out[~cancelled_mask].copy()
 
-    # ── Filter 3: remove known junk codes ─────────────────────────────
     junk_mask = out["_sku"].str.upper().isin({c.upper() for c in _UK_RETAIL_JUNK_CODES})
     out = out[~junk_mask].copy()
 
-    # ── Filter 4: remove rows where Description is missing or looks like a code
     # A "real" description has at least 2 words OR ≥10 chars with spaces
     def _is_real_desc(s: str) -> bool:
         s = s.strip()
@@ -173,7 +166,6 @@ def _parse_uk_retail(df: pd.DataFrame) -> pd.DataFrame:
     real_desc_mask = out["_desc"].apply(_is_real_desc)
     out = out[real_desc_mask].copy()
 
-    # ── Build output ──────────────────────────────────────────────────
     result = pd.DataFrame()
     result["order_purchase_timestamp"] = out["order_purchase_timestamp"].values
     result["product_id"]   = out["_sku"].values
@@ -375,7 +367,6 @@ _PARSERS = {
 }
 
 
-# ─── Price extraction ─────────────────────────────────────────────────────────
 
 def _extract_price_map(df_raw: pd.DataFrame, df_clean: pd.DataFrame) -> Dict[str, float]:
     """
@@ -421,7 +412,6 @@ def _extract_price_map(df_raw: pd.DataFrame, df_clean: pd.DataFrame) -> Dict[str
     return price_map
 
 
-# ─── Cost extraction (FMCG only) ─────────────────────────────────────────────
 
 def _extract_cost_map(
     df_raw: pd.DataFrame,
@@ -485,7 +475,6 @@ def _extract_cost_map(
     return cost_map
 
 
-# ─── Public API ───────────────────────────────────────────────────────────────
 
 def clean_ecommerce_data(
     df: pd.DataFrame,

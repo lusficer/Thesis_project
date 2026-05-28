@@ -93,7 +93,6 @@ def _product_import_item(product: Product, db: Session) -> dict:
     }
 
 
-# ─── Categories ──────────────────────────────────────────────────────
 
 @router.get("/categories", response_model=list[CategoryResponse])
 def list_categories(db: Session = Depends(get_db)):
@@ -135,7 +134,6 @@ def delete_category(category_id: int, db: Session = Depends(get_db)):
     return None
 
 
-# ─── Bulk Import ────────────────────────────────────────────────────
 
 def _run_import(job_id: str, file_bytes_list: list[bytes], filenames: list[str]):
     """Run in BackgroundTasks thread pool (does not block the event loop)."""
@@ -146,7 +144,6 @@ def _run_import(job_id: str, file_bytes_list: list[bytes], filenames: list[str])
     try:
         from app.core.preprocessing import smart_merge_files
  
-        # ── 1. Detect encoding, read CSVs in chunks ─────────────────────────
         raw_dfs: list[pd.DataFrame] = []
         for b, fname in zip(file_bytes_list, filenames):
             encoding = _detect_encoding(b)
@@ -166,13 +163,11 @@ def _run_import(job_id: str, file_bytes_list: list[bytes], filenames: list[str])
                     time.sleep(0)
                 raw_dfs.append(pd.concat(chunks, ignore_index=True))
  
-        # ── 2. smart_merge -> normalize ─────────────────────────────────────
         # cost_map is non-empty only for FMCG datasets (Revenue/Profit/Quantity cols)
         merged_df, price_map, cost_map = smart_merge_files(raw_dfs)
         if merged_df.empty:
             raise ValueError("No product data found in the CSV file.")
  
-        # ── 3. Dedup with dict (faster than groupby on 3M rows) ─────────────
         seen: dict[str, str] = {}   # sku -> product_name
         for pid, pname in zip(merged_df["product_id"], merged_df["product_name"]):
             sku = str(pid).strip() if pid else ""
@@ -182,7 +177,6 @@ def _run_import(job_id: str, file_bytes_list: list[bytes], filenames: list[str])
  
         job["total"] = len(seen)
  
-        # ── 4. Batch-query existing SKUs ───────────────────────────────────
         all_skus = list(seen.keys())
         BATCH = 2000   # MySQL IN() safe with ~2000 values
         existing: dict[str, int] = {}  # sku -> product_id
@@ -193,7 +187,6 @@ def _run_import(job_id: str, file_bytes_list: list[bytes], filenames: list[str])
             for pid, psku in rows:
                 existing[psku] = pid
  
-        # ── 5. Classify create vs update ───────────────────────────────────
         to_create: list[dict] = []
         to_update: list[dict] = []
         skipped = 0
@@ -215,7 +208,6 @@ def _run_import(job_id: str, file_bytes_list: list[bytes], filenames: list[str])
                                    "base_price": price, "current_price": price,
                                    "cost_price": cost_val})
  
-        # ── 6. Bulk INSERT new products ───────────────────────────────────
         if to_create:
             db.bulk_insert_mappings(Product, [
                 {
@@ -231,11 +223,9 @@ def _run_import(job_id: str, file_bytes_list: list[bytes], filenames: list[str])
             ])
             db.flush()
  
-        # ── 7. Bulk UPDATE existing products ───────────────────────────────
         if to_update:
             db.bulk_update_mappings(Product, to_update)
  
-        # ── 8. Create inventory for new products - no full re-query ─────────
         #    Only query small batches of inserted SKUs to get IDs
         if to_create:
             new_skus = [r["sku"] for r in to_create]
@@ -268,7 +258,6 @@ def _run_import(job_id: str, file_bytes_list: list[bytes], filenames: list[str])
             if new_inv_maps:
                 db.bulk_insert_mappings(Inventory, new_inv_maps)
  
-        # ── 9. Single commit ───────────────────────────────────────────────
         db.commit()
  
         job.update({
@@ -297,7 +286,6 @@ def _detect_encoding(b: bytes) -> str:
     return "latin-1"
  
  
-# ─── Endpoints ───────────────────────────────────────────────────────────────
  
  
 @router.post("/import")
@@ -440,7 +428,6 @@ def cleanup_junk_products(db: Session = Depends(get_db)):
     }
 
 
-# ─── Product List ────────────────────────────────────────────────────
 
 @router.get("", response_model=ProductListResponse)
 def list_products(
@@ -573,7 +560,6 @@ def list_products(
 
 
 
-# ─── Product Detail ─────────────────────────────────────────────────
 
 @router.get("/{product_id}", response_model=ProductDetail)
 def get_product(product_id: int, db: Session = Depends(get_db)):
@@ -610,7 +596,6 @@ def get_product(product_id: int, db: Session = Depends(get_db)):
     )
 
 
-# ─── Create Product ─────────────────────────────────────────────────
 
 @router.post("", response_model=ProductDetail, status_code=201)
 def create_product(data: ProductCreate, db: Session = Depends(get_db)):
@@ -644,7 +629,6 @@ def create_product(data: ProductCreate, db: Session = Depends(get_db)):
     return get_product(product.id, db)
 
 
-# ─── Update Product ─────────────────────────────────────────────────
 
 @router.put("/{product_id}", response_model=ProductDetail)
 def update_product(product_id: int, data: ProductUpdate, db: Session = Depends(get_db)):
@@ -661,7 +645,6 @@ def update_product(product_id: int, data: ProductUpdate, db: Session = Depends(g
     return get_product(product.id, db)
 
 
-# ─── Delete (soft) ──────────────────────────────────────────────────
 
 @router.delete("/{product_id}", status_code=204)
 def delete_product(product_id: int, db: Session = Depends(get_db)):
@@ -674,7 +657,6 @@ def delete_product(product_id: int, db: Session = Depends(get_db)):
     return None
 
 
-# ─── Bulk Delete (soft) ─────────────────────────────────────────────
 
 @router.post("/bulk-delete", response_model=BulkDeleteResponse)
 def bulk_delete_products(data: BulkDeleteRequest, db: Session = Depends(get_db)):

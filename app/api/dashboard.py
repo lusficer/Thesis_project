@@ -28,7 +28,6 @@ def _get_anchor_date(db: Session):
 
 @router.get("/summary", response_model=DashboardSummary)
 def get_summary(db: Session = Depends(get_db)):
-    # ── Anchor date: newest date in sales_history ───────────────────
     today = _get_anchor_date(db)
     has_sales = today is not None
 
@@ -36,14 +35,12 @@ def get_summary(db: Session = Depends(get_db)):
     prev_week_ago = (today - timedelta(days=14)) if has_sales else None
     month_ago     = (today - timedelta(days=30)) if has_sales else None
 
-    # ── Total active products ───────────────────────────────────────
     total_products = (
         db.query(func.count(Product.id))
         .filter(Product.is_active == True)
         .scalar() or 0
     )
 
-    # ── Inventory value ─────────────────────────────────────────────
     inv_value = (
         db.query(func.sum(Inventory.current_stock * Product.current_price))
         .join(Product, Product.id == Inventory.product_id)
@@ -51,7 +48,6 @@ def get_summary(db: Session = Depends(get_db)):
         .scalar()
     ) or 0
 
-    # ── Low stock / out of stock ──────────────────────────────────────
     low_stock = (
         db.query(func.count(Inventory.id))
         .join(Product, Product.id == Inventory.product_id)
@@ -70,7 +66,6 @@ def get_summary(db: Session = Depends(get_db)):
         .scalar()
     ) or 0
 
-    # ── Revenue stats (only when data exists) ───────────────────────
     if has_sales:
         rev_today = (
             db.query(func.sum(SalesHistory.revenue))
@@ -107,7 +102,6 @@ def get_summary(db: Session = Depends(get_db)):
     else:
         rev_today = rev_week = rev_month = sales_today = revenue_prev_week = 0
 
-    # ── Sales trend ───────────────────────────────────────────────────
     if rev_week > revenue_prev_week:
         recent_sales_trend = "UP"
     elif rev_week < revenue_prev_week:
@@ -115,10 +109,8 @@ def get_summary(db: Session = Depends(get_db)):
     else:
         recent_sales_trend = "STABLE"
 
-    # ── Notifications ─────────────────────────────────────────────────
     total_notifications = db.query(func.count(Notification.id)).scalar() or 0
 
-    # ── Top products (30 days from anchor date) ─────────────────────
     top_products = []
     if has_sales:
         top_rows = (
@@ -145,7 +137,6 @@ def get_summary(db: Session = Depends(get_db)):
             for pid, name, revenue, units_sold in top_rows
         ]
 
-    # ── Low stock alerts ──────────────────────────────────────────────
     low_stock_rows = (
         db.query(Product.id, Product.name, Inventory.current_stock)
         .join(Inventory, Product.id == Inventory.product_id)

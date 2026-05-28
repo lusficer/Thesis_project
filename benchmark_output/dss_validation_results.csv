@@ -1,0 +1,7 @@
+product,test_days,total_demand,initial_stock,dss_stockout_days,dss_stockout_rate,dss_orders,dss_units_ordered,dss_final_stock,naive_stockout_days,naive_stockout_rate,naive_orders,naive_units_ordered,naive_final_stock,dataset
+Saree,73,160,30,0,0.0,4,208,78,6,8.2,5,150,20,India Sales
+Hankerchief,73,236,29,0,0.0,8,208,1,0,0.0,5,225,18,India Sales
+Stole,73,251,26,2,2.7,9,207,-18,2,2.7,5,240,15,India Sales
+Small Electronics,147,6990,483,0,0.0,19,6757,250,27,18.4,10,6650,143,FMCG Sales 2023-24
+Sportswear,147,7326,475,65,44.2,19,4903,-1948,28,19.0,10,6970,119,FMCG Sales 2023-24
+Men's Wear,147,6998,456,0,0.0,19,6700,158,28,19.0,10,6660,118,FMCG Sales 2023-24

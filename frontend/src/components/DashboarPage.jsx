@@ -8,7 +8,6 @@ import {
 } from "recharts";
 import { dashboardAPI, productsAPI, inventoryAPI, notificationsAPI } from "@/lib/api";
 
-// ─── Helpers ────────────────────────────────────────────────────────
 const fmt    = (n) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n ?? 0);
 const fmtNum = (n) => new Intl.NumberFormat("en-US").format(n ?? 0);
 const fmtK   = (n) => n >= 1000 ? `$${(n / 1000).toFixed(1)}k` : `$${n}`;
@@ -19,7 +18,6 @@ const STATUS = {
   out_of_stock: { bg: "#fef2f2", text: "#dc2626", dot: "#ef4444", label: "Out of Stock" },
 };
 
-// ─── Icons ──────────────────────────────────────────────────────────
 const I = {
   Box:       () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="m16.5 9.4-9-5.19M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>,
   Dollar:    () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
@@ -36,7 +34,6 @@ const I = {
   DSS:       () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>,
 };
 
-// ─── Activity type config ────────────────────────────────────────────
 const ACTIVITY_CFG = {
   stock_in:        { icon: <I.StockIn />,  color: "#059669", bg: "#ecfdf5", label: "Restocked" },
   stock_out:       { icon: <I.StockOut />, color: "#dc2626", bg: "#fef2f2", label: "Stock Out" },
@@ -45,7 +42,6 @@ const ACTIVITY_CFG = {
   dss_alert:       { icon: <I.Alert />,    color: "#d97706", bg: "#fffbeb", label: "Alert" },
 };
 
-// ─── Custom Tooltip ──────────────────────────────────────────────────
 const RevenueTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
@@ -58,7 +54,6 @@ const RevenueTooltip = ({ active, payload, label }) => {
   );
 };
 
-// ─── Main Component ──────────────────────────────────────────────────
 export default function DashboardPage() {
   const router = useRouter();
 
@@ -208,7 +203,6 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* ── KPI Cards ─────────────────────────────────────────────── */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 20, marginBottom: 28 }}>
           {[
             {
@@ -268,7 +262,6 @@ export default function DashboardPage() {
           ))}
         </div>
 
-        {/* ── Revenue Chart + Top Products ──────────────────────────── */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 20, marginBottom: 20 }}>
 
           {/* Revenue / Units chart */}
@@ -401,7 +394,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* ── Inventory Alerts + Activity Feed ──────────────────────── */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
 
           {/* Low Stock Alerts */}
@@ -499,7 +491,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* ── Products Table ─────────────────────────────────────────── */}
         <div style={{ background: "white", borderRadius: 16, border: "1px solid #e8eaef", overflow: "hidden" }}>
           <div style={{ padding: "18px 24px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div style={{ display: "flex", gap: 6 }}>

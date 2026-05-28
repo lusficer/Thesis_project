@@ -35,7 +35,6 @@ export default function Navbar() {
   const userRef  = useRef(null);
   const notifRef = useRef(null);
 
-  // ── Fetch user ────────────────────────────────────────────────────
   useEffect(() => {
     const authed = isAuthenticated();
     setIsAuthed(authed);
@@ -53,7 +52,6 @@ export default function Navbar() {
       .catch(() => { setUser(null); });
   }, [pathname]);
 
-  // ── Fetch notifications ───────────────────────────────────────────
   useEffect(() => {
     if (!isAuthed) return;
 
@@ -66,7 +64,6 @@ export default function Navbar() {
       .catch(() => {});
   }, [isAuthed]);
 
-  // ── Close dropdowns on outside click ─────────────────────────────
   useEffect(() => {
     const handler = (e) => {
       if (userRef.current  && !userRef.current.contains(e.target))  setShowUserMenu(false);
@@ -134,7 +131,6 @@ export default function Navbar() {
           {isAuthed && (
           <div className="flex items-center space-x-2">
 
-            {/* ── Notification Bell ── */}
             <div ref={notifRef} className="relative">
               <button
                 onClick={() => { setShowNotifs(v => !v); setShowUserMenu(false); }}
@@ -191,7 +187,6 @@ export default function Navbar() {
               )}
             </div>
 
-            {/* ── User Avatar ── */}
             <div ref={userRef} className="relative">
               <button
                 onClick={() => { setShowUserMenu(v => !v); setShowNotifs(false); }}

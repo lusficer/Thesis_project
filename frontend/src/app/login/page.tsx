@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { setToken, setCachedUser } from '@/lib/api';
 
-// ─── Design tokens (match existing app) ──────────────────────────────
 const C = {
   bg:      '#f8f9fb',
   surface: '#ffffff',
@@ -17,7 +16,6 @@ const C = {
   subtle:  '#94a3b8',
 };
 
-// ─── Field component ─────────────────────────────────────────────────
 type LoginErrors = {
   email?: string;
   password?: string;
@@ -75,7 +73,6 @@ function Field({ label, type = 'text', value, onChange, error, placeholder, auto
   );
 }
 
-// ─── Main page ────────────────────────────────────────────────────────
 export default function LoginPage() {
   const router = useRouter();
   const [tab, setTab] = useState('login'); // 'login' | 'register'
@@ -96,7 +93,6 @@ export default function LoginPage() {
   const [regApiError, setRegApiError] = useState('');
   const [regLoading,  setRegLoading]  = useState(false);
 
-  // ── Validation ──────────────────────────────────────────────────────
   const validateEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 
   const validateLogin = () => {
@@ -121,7 +117,6 @@ export default function LoginPage() {
     return Object.keys(errs).length === 0;
   };
 
-  // ── Login submit ────────────────────────────────────────────────────
   const handleLogin = async () => {
     if (!validateLogin()) return;
     setLoginLoading(true);
@@ -143,7 +138,6 @@ export default function LoginPage() {
     }
   };
 
-  // ── Register submit ─────────────────────────────────────────────────
   const handleRegister = async () => {
     if (!validateRegister()) return;
     setRegLoading(true);
@@ -258,7 +252,6 @@ export default function LoginPage() {
 
           <div style={{ padding: 28 }}>
 
-            {/* ── LOGIN TAB ── */}
             {tab === 'login' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
                 <Field
@@ -309,7 +302,6 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* ── REGISTER TAB ── */}
             {tab === 'register' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
                 <Field

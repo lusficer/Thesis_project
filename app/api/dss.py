@@ -176,7 +176,6 @@ def _get_sales_df(product_id: int, db: Session) -> pd.DataFrame:
     return df
 
 
-# ─── Run DSS Analysis ───────────────────────────────────────────────
 
 @router.post("/run", response_model=DSSReportResponse)
 def run_dss(data: DSSRunRequest, db: Session = Depends(get_db)):
@@ -260,7 +259,6 @@ def run_dss(data: DSSRunRequest, db: Session = Depends(get_db)):
     db.add(report)
     db.flush()
 
-    # ── Update inventory ROP / safety stock ──────────────────────────
     if inv and isinstance(result.get("inventory_advice"), dict):
         advice = result["inventory_advice"]
         if "reorder_point" in advice:
@@ -268,7 +266,6 @@ def run_dss(data: DSSRunRequest, db: Session = Depends(get_db)):
         if "safety_stock" in advice:
             inv.safety_stock = int(advice["safety_stock"])
 
-    # ── Generate notifications based on results ──────────────────────
     inv_advice = result.get("inventory_advice", {})
     pricing_advice = result.get("pricing_advice", {})
 
@@ -329,7 +326,6 @@ def run_dss(data: DSSRunRequest, db: Session = Depends(get_db)):
     )
 
 
-# ─── Confirm Order (ORDER_NOW → Stock In) ───────────────────────────
 
 @router.post("/confirm-order", response_model=DSSActionResponse)
 def confirm_order(data: DSSConfirmOrderRequest, db: Session = Depends(get_db)):
@@ -392,7 +388,6 @@ def confirm_order(data: DSSConfirmOrderRequest, db: Session = Depends(get_db)):
     )
 
 
-# ─── Apply Price Recommendation ─────────────────────────────────────
 
 @router.post("/apply-price", response_model=DSSActionResponse)
 def apply_price(data: DSSApplyPriceRequest, db: Session = Depends(get_db)):
@@ -455,7 +450,6 @@ def apply_price(data: DSSApplyPriceRequest, db: Session = Depends(get_db)):
     )
 
 
-# ─── Backtest Validation ────────────────────────────────────────────
 
 @router.post("/backtest", response_model=BacktestResponse)
 def run_backtest(data: BacktestRequest, db: Session = Depends(get_db)):
@@ -515,7 +509,6 @@ def run_backtest(data: BacktestRequest, db: Session = Depends(get_db)):
     )
 
 
-# ─── Report History ─────────────────────────────────────────────────
 
 @router.get("/reports/{product_id}", response_model=list[DSSReportResponse])
 def get_reports(product_id: int, limit: int = 10, db: Session = Depends(get_db)):
@@ -537,7 +530,6 @@ def get_reports(product_id: int, limit: int = 10, db: Session = Depends(get_db))
     ]
 
 
-# ─── Batch DSS Scan (for cron job) ──────────────────────────────────
 
 @router.post("/scan-all")
 def scan_all_products(data: Optional[DSSScanAllRequest] = None, db: Session = Depends(get_db)):
@@ -842,13 +834,13 @@ def portfolio(db: Session = Depends(get_db)):
 
     product_ids = [p.id for p in products]
 
-    # 2. Batch-load future forecasts — ONE query for all products
-    today = date.today()
+    # 2. Batch-load cached forecasts — ONE query for all products
+    # Load ANY cached forecast for each product (not just future dates)
+    # The cache stores forward-looking predictions regardless of compute date
     forecast_rows = (
         db.query(ForecastCache)
         .filter(
             ForecastCache.product_id.in_(product_ids),
-            ForecastCache.forecast_date >= today,
             ForecastCache.model_version == "hybrid_asym_v1",
         )
         .order_by(ForecastCache.product_id, ForecastCache.forecast_date)

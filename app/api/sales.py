@@ -57,7 +57,6 @@ def _is_placeholder_name(name: str, sku: str) -> bool:
     return False
 
 
-# ─── Background worker ────────────────────────────────────────────────
 
 def _run_import(job_id: str, file_bytes_list: list[bytes], filenames: list[str]):
     """Runs in BackgroundTasks thread pool — does not block the event loop."""
@@ -69,7 +68,6 @@ def _run_import(job_id: str, file_bytes_list: list[bytes], filenames: list[str])
     try:
         from app.core.preprocessing import smart_merge_files
 
-        # ── 1. Decode bytes → DataFrames ──────────────────────────────
         raw_dfs: list[pd.DataFrame] = []
         for b in file_bytes_list:
             for enc in ("utf-8", "utf-8-sig", "latin-1", "cp1252"):
@@ -84,7 +82,6 @@ def _run_import(job_id: str, file_bytes_list: list[bytes], filenames: list[str])
 
         job["progress"] = 15
 
-        # ── 2. Normalize via preprocessing adapter ────────────────────
         df_clean, price_map, cost_map = smart_merge_files(raw_dfs)
 
         if df_clean is None or df_clean.empty:
@@ -92,7 +89,6 @@ def _run_import(job_id: str, file_bytes_list: list[bytes], filenames: list[str])
 
         job["progress"] = 30
 
-        # ── 3. Aggregate to product x date ───────────────────────────
         df_clean["date"] = pd.to_datetime(df_clean["order_purchase_timestamp"]).dt.date
         groups       = list(df_clean.groupby(["product_id", "date"]))
         total_groups = len(groups)
@@ -101,7 +97,6 @@ def _run_import(job_id: str, file_bytes_list: list[bytes], filenames: list[str])
         records_imported = 0
         products_seen    = set()
 
-        # ── 4. Upsert products + sales history ────────────────────────
         for idx, ((pid, d), group) in enumerate(groups):
             pid_str = str(pid)
 
@@ -185,7 +180,6 @@ def _run_import(job_id: str, file_bytes_list: list[bytes], filenames: list[str])
             "date_range":        date_range,
         })
 
-        # ── 5. Precompute forecasts for affected products only ───────────
         # (Hybrid fit takes ~1.4s/product; only recompute products that
         # actually received new sales data.)
         if products_seen:
@@ -213,7 +207,6 @@ def _run_import(job_id: str, file_bytes_list: list[bytes], filenames: list[str])
         db.close()
 
 
-# ─── Endpoints ────────────────────────────────────────────────────────
 
 @router.post("/import")
 async def import_sales_csv(

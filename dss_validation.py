@@ -1,7 +1,5 @@
 """
-═══════════════════════════════════════════════════════════════════════
   DSS VALIDATION — Simulate Real-World Usage on Historical Data
-═══════════════════════════════════════════════════════════════════════
 
 This script answers: "Does the DSS actually help a shop manager?"
 
@@ -133,9 +131,7 @@ def simulate_dss(df_clean, price_map, product_id, initial_stock=100):
     if pd.isna(current_price) or current_price <= 0:
         current_price = 10.0
     
-    # ══════════════════════════════════════════
     #  SIMULATION: Manager WITH DSS
-    # ══════════════════════════════════════════
     stock_with_dss = initial_stock
     stockout_days_with_dss = 0
     total_orders_with_dss = 0
@@ -182,10 +178,8 @@ def simulate_dss(df_clean, price_map, product_id, initial_stock=100):
                     total_orders_with_dss += 1
                     total_units_ordered_with_dss += qty
     
-    # ══════════════════════════════════════════
     #  SIMULATION: Manager WITHOUT DSS (naive)
     #  Strategy: order fixed amount when stock < 20
-    # ══════════════════════════════════════════
     stock_no_dss = initial_stock
     stockout_days_no_dss = 0
     total_orders_no_dss = 0
@@ -208,9 +202,7 @@ def simulate_dss(df_clean, price_map, product_id, initial_stock=100):
             total_orders_no_dss += 1
             total_units_ordered_no_dss += naive_order_qty
     
-    # ══════════════════════════════════════════
     #  RESULTS
-    # ══════════════════════════════════════════
     test_days = len(actual_sales)
     total_demand = int(sum(actual_sales))
     
@@ -322,9 +314,7 @@ def run_validation():
                 if len(result['decisions']) > 5:
                     print(f"    ... and {len(result['decisions']) - 5} more decisions")
     
-    # ══════════════════════════════════════════
     #  SUMMARY
-    # ══════════════════════════════════════════
     if all_results:
         print(f"\n\n{'=' * 70}")
         print(f"  OVERALL VALIDATION SUMMARY")

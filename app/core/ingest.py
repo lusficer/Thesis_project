@@ -12,9 +12,7 @@ from app.core.preprocessing import clean_ecommerce_data, build_daily_sales, smar
 warnings.filterwarnings("ignore")
 
 
-# ─────────────────────────────────────────────────────────────────────
 # Encoding detection
-# ─────────────────────────────────────────────────────────────────────
 
 _ENCODINGS = ["utf-8", "utf-8-sig", "latin-1", "iso-8859-1", "cp1252", "utf-16"]
 
@@ -40,9 +38,7 @@ def _read_csv_robust(source: Union[str, Path, bytes, io.IOBase], **kwargs) -> pd
     raise ValueError("Could not decode CSV with any supported encoding.")
 
 
-# ─────────────────────────────────────────────────────────────────────
 # Main ingestion entry point
-# ─────────────────────────────────────────────────────────────────────
 
 def ingest_csv(
     source: Union[str, Path, bytes, io.IOBase],
@@ -90,9 +86,7 @@ def ingest_multiple_csvs(
     return daily, price_map
 
 
-# ─────────────────────────────────────────────────────────────────────
 # DB-ready helpers
-# ─────────────────────────────────────────────────────────────────────
 
 def daily_sales_to_db_rows(
     daily_df: pd.DataFrame,
@@ -201,9 +195,7 @@ def validate_csv_schema(df: pd.DataFrame, required_output_cols: Optional[List[st
     }
 
 
-# ─────────────────────────────────────────────────────────────────────
 # Aliases required by app/core/__init__.py
-# ─────────────────────────────────────────────────────────────────────
 
 def aggregate_sales_by_day(
     df_clean: pd.DataFrame,

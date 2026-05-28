@@ -13,7 +13,6 @@ const statusCfg = {
 
 const fmt = (n) => `$${Number(n).toFixed(2)}`;
 
-// ─── Icons ──────────────────────────────────────────────────────────
 const I = {
   Plus: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
   Search: () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
@@ -24,7 +23,6 @@ const I = {
   Back: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>,
 };
 
-// ─── Component ──────────────────────────────────────────────────────
 export default function ProductsPage() {
   const router = useRouter();
   const [products, setProducts] = useState([]);
@@ -355,7 +353,6 @@ export default function ProductsPage() {
 
 
 
-  // ─── Detail View ──────────────────────────────────────────────────
   if (viewProduct) {
     const p = viewProduct;
     const s = statusCfg[p.stock_status];
@@ -435,7 +432,6 @@ export default function ProductsPage() {
     );
   }
 
-  // ─── List View ────────────────────────────────────────────────────
   return (
     <div style={styles.page}>
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -788,7 +784,6 @@ export default function ProductsPage() {
   );
 }
 
-// ─── Sub-components ─────────────────────────────────────────────────
 
 function FormField({ label, value, onChange, placeholder, type = "text", multiline, options, disabled }) {
   const base = {
@@ -869,7 +864,6 @@ function GlobalStyles() {
   `}</style>;
 }
 
-// ─── Styles ─────────────────────────────────────────────────────────
 const styles = {
   page: { fontFamily: "'DM Sans', 'Segoe UI', system-ui, sans-serif", background: "#f8f9fb", minHeight: "100vh", color: "#1a1a2e" },
   main: { maxWidth: 1400, margin: "0 auto", padding: "32px 40px" },

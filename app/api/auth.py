@@ -66,7 +66,6 @@ def get_current_user(
     return user
 
 
-# ─── Routes ──────────────────────────────────────────────────────────
 
 @router.post("/register", response_model=UserResponse, status_code=201)
 def register(data: UserRegister, db: Session = Depends(get_db)):

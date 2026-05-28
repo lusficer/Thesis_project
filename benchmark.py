@@ -1,8 +1,6 @@
 """
-═══════════════════════════════════════════════════════════════════════
   BENCHMARK SCRIPT — Model Comparison for Thesis Chapter 4 & 5
   Prophet-only vs XGBoost-only vs Hybrid (Prophet+XGBoost)
-═══════════════════════════════════════════════════════════════════════
 
 Usage:
     python benchmark.py
@@ -33,33 +31,26 @@ warnings.filterwarnings('ignore')
 logging.getLogger('cmdstanpy').setLevel(logging.WARNING)
 logging.getLogger('prophet').setLevel(logging.WARNING)
 
-# ── Import project modules ──
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 from app.core.preprocessing import clean_ecommerce_data
 
-# ── Import ML libraries ──
 from prophet import Prophet
 import xgboost as xgb
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 
 
-# ═══════════════════════════════════════════════════════════════
-#  1. DATASET REGISTRY — Add your datasets here
-# ═══════════════════════════════════════════════════════════════
 
 def load_datasets():
     """
     Returns a dict of {dataset_name: (df_clean, price_map)}.
     Each df_clean has columns: order_purchase_timestamp, product_id, quantity, product_name
     
-    ── HOW TO ADD A NEW DATASET ──
     1. Put CSV files in a folder (e.g., data/new_dataset/)
     2. Add a new block below following the pattern
     3. Run benchmark.py — it will auto-include the new dataset
     """
     datasets = {}
     
-    # ── Dataset 1: India Sales ──
     try:
         df_list = pd.read_csv('data/india/List_of_Orders.csv', encoding='ISO-8859-1')
         df_details = pd.read_csv('data/india/Order_Details.csv', encoding='ISO-8859-1')
@@ -79,7 +70,6 @@ def load_datasets():
             print(f"  ✅ India Sales: {len(df_clean)} rows ({df_clean['product_id'].nunique()} categories)")
     except FileNotFoundError:
         print("  ⚠️ India Sales not found")
-    # ── Dataset 2: UK Retail ──
     try:
         for path in ['data/uk/online_retail_II.csv', 'data/uk/OnlineRetail.csv', 'data/uk/data.csv', 'data/uk_retail.csv']:
             if os.path.exists(path):
@@ -104,7 +94,6 @@ def load_datasets():
     except Exception as e:
         print(f"  ⚠️ UK Retail error: {e}")
 
-    # ── Dataset 3: Electronics ──
     try:
         for path in ['data/electronics/Sales_Data.csv', 'data/electronics/data.csv']:
             if os.path.exists(path):
@@ -120,7 +109,6 @@ def load_datasets():
     except Exception as e:
         print(f"  ⚠️ Electronics error: {e}")
 
-    # ── Dataset 4: Olist ──
     try:
         olist_dir = 'data/olist/'
         if os.path.exists(olist_dir):
@@ -141,11 +129,8 @@ def load_datasets():
     except Exception as e:
         print(f"  ⚠️ Olist error: {e}")
 
-    # ──────────────────────────────────────────────────────────
     #  ADD NEW DATASETS BELOW — follow the pattern above
-    # ──────────────────────────────────────────────────────────
     
-    # ── Dataset 5: Retail Transactions (Kaggle - prasad22) ──
     # Product column is a stringified list: "['Ketchup', 'Shaving Cream']"
     # Need to explode into individual product rows
     try:
@@ -172,10 +157,8 @@ def load_datasets():
     except Exception as e:
         print(f"  ⚠️ Retail Transactions error: {e}")
 
-    # ── Dataset 6: FMCG Product Sales 2023-2024 (Kaggle - yashyennewar) ──
     # Date format: MM-DD-YY (e.g., 08-23-23)
     # Column names have trailing spaces: " Unit_Price ", " Revenue ", " Profit "
-    # ── Dataset 6: FMCG Product Sales 2023-2024 ──
     try:
         for path in ['data/FMCG/product_sales_dataset_final.csv',
                     'data/fmcg/product_sales.csv',
@@ -202,7 +185,6 @@ def load_datasets():
     except Exception as e:
         print(f"  ⚠️ FMCG Sales 2023-24 error: {e}")
 
-    # ── Dataset 7: Store Sales - Favorita Ecuador (Kaggle competition) ──
     # Download from: kaggle.com/c/store-sales-time-series-forecasting/data
     # Columns: id, date, store_nbr, family, sales, onpromotion
     # 4+ years daily data, 33 product families, strong seasonality
@@ -230,9 +212,7 @@ def load_datasets():
     return datasets
 
 
-# ═══════════════════════════════════════════════════════════════
 #  2. MODEL IMPLEMENTATIONS — Same logic as hybrid_model.py
-# ═══════════════════════════════════════════════════════════════
 
 FEATURES = ['day_of_week', 'is_weekend', 'month', 'rolling_mean_7', 'lag_7']
 
@@ -360,9 +340,7 @@ def train_predict_hybrid_no_asym(df_train, df_test):
     return train_predict_hybrid(df_train, df_test, penalty_under=1.0, penalty_over=1.0)
 
 
-# ═══════════════════════════════════════════════════════════════
 #  3. EVALUATION METRICS
-# ═══════════════════════════════════════════════════════════════
 
 def compute_metrics(y_true, y_pred):
     """Compute standard forecasting metrics"""
@@ -399,9 +377,7 @@ def compute_metrics(y_true, y_pred):
     }
 
 
-# ═══════════════════════════════════════════════════════════════
 #  4. SELECT REPRESENTATIVE PRODUCTS
-# ═══════════════════════════════════════════════════════════════
 
 def select_products(df_clean, top_n=5, min_days=14):
     """
@@ -451,9 +427,6 @@ def select_products(df_clean, top_n=5, min_days=14):
     return top.index.tolist()
 
 
-# ═══════════════════════════════════════════════════════════════
-#  5. MAIN BENCHMARK LOOP
-# ═══════════════════════════════════════════════════════════════
 
 def run_benchmark():
     print("=" * 70)
@@ -462,7 +435,6 @@ def run_benchmark():
     print("=" * 70)
     print()
     
-    # ── Load datasets ──
     print("📂 Loading datasets...")
     datasets = load_datasets()
     
@@ -477,7 +449,6 @@ def run_benchmark():
     
     print(f"\n📊 Found {len(datasets)} dataset(s)\n")
     
-    # ── Models to compare ──
     models = {
         'Prophet-Only': train_predict_prophet_only,
         'XGBoost-Only': train_predict_xgboost_only,
@@ -487,7 +458,6 @@ def run_benchmark():
     
     all_results = []
     
-    # ── Iterate datasets ──
     for ds_name, df_clean in datasets.items():
         print(f"\n{'─' * 60}")
         print(f"  Dataset: {ds_name}")
@@ -506,7 +476,6 @@ def run_benchmark():
             df_product['y'] = df_product['quantity']
             df_daily = df_product.groupby('ds')['y'].sum().reset_index().sort_values('ds')
             
-            # ── CRITICAL: Fill missing dates with 0 ──
             # Without this, rolling features have gaps and Prophet/XGBoost misalign
             full_date_range = pd.date_range(start=df_daily['ds'].min(), end=df_daily['ds'].max(), freq='D')
             df_daily = df_daily.set_index('ds').reindex(full_date_range, fill_value=0).reset_index()
@@ -516,7 +485,6 @@ def run_benchmark():
                 print(f"    ⚠️ {pid}: Only {len(df_daily)} days, skipping")
                 continue
             
-            # ── Time-based train/test split (80/20) ──
             split_idx = int(len(df_daily) * 0.8)
             df_train = df_daily.iloc[:split_idx].copy().reset_index(drop=True)
             df_test = df_daily.iloc[split_idx:].copy().reset_index(drop=True)
@@ -531,7 +499,6 @@ def run_benchmark():
             print(f"\n    🏷️  {product_label}")
             print(f"       Train: {len(df_train)} days | Test: {len(df_test)} days | Total: {len(df_daily)} days")
             
-            # ── Run each model ──
             for model_name, model_fn in models.items():
                 try:
                     preds = model_fn(df_train, df_test)
@@ -566,9 +533,7 @@ def run_benchmark():
                         'Dir_Accuracy': None, 'Under_Forecast_Pct': None
                     })
     
-    # ═══════════════════════════════════════════════════════════
     #  6. SAVE RESULTS & GENERATE REPORT
-    # ═══════════════════════════════════════════════════════════
     
     if not all_results:
         print("\n❌ No results generated. Check your data paths.")
@@ -576,18 +541,15 @@ def run_benchmark():
     
     df_results = pd.DataFrame(all_results)
     
-    # ── Save raw results ──
     os.makedirs('benchmark_output', exist_ok=True)
     df_results.to_csv('benchmark_output/benchmark_results.csv', index=False)
     print(f"\n\n💾 Raw results saved: benchmark_output/benchmark_results.csv")
     
-    # ── Aggregated summary per dataset × model ──
     numeric_cols = ['MAE', 'RMSE', 'MAPE', 'Dir_Accuracy', 'Under_Forecast_Pct']
     summary = df_results.groupby(['Dataset', 'Model'])[numeric_cols].mean().round(2)
     summary.to_csv('benchmark_output/benchmark_summary.csv')
     print(f"💾 Summary saved: benchmark_output/benchmark_summary.csv")
     
-    # ── Text report ──
     report_lines = []
     report_lines.append("=" * 75)
     report_lines.append("  BENCHMARK RESULTS — Model Comparison for Thesis")
@@ -633,7 +595,6 @@ def run_benchmark():
                 mape = f"{row['MAPE']:.1f}%" if pd.notna(row['MAPE']) else "ERR"
                 report_lines.append(f"      {row['Model']:<24s} MAE={mae:>8s}  RMSE={rmse:>8s}  MAPE={mape:>8s}")
     
-    # ── Overall winner ──
     report_lines.append(f"\n\n{'=' * 75}")
     report_lines.append("  OVERALL COMPARISON (averaged across all datasets & products)")
     report_lines.append(f"{'=' * 75}")
@@ -681,7 +642,6 @@ def run_benchmark():
     # Print report to console
     print(f"\n{report_text}")
     
-    # ── Generate charts ──
     try:
         generate_charts(df_results)
     except Exception as e:
@@ -691,9 +651,7 @@ def run_benchmark():
     print("\n✅ Benchmark complete!")
 
 
-# ═══════════════════════════════════════════════════════════════
 #  7. CHART GENERATION
-# ═══════════════════════════════════════════════════════════════
 
 def generate_charts(df_results):
     """Generate comparison bar charts for thesis"""
@@ -710,7 +668,6 @@ def generate_charts(df_results):
         'Hybrid (no asym.)': '#A78BFA',
     }
     
-    # ── Chart 1: Overall MAE comparison ──
     fig, axes = plt.subplots(1, 3, figsize=(16, 5))
     fig.suptitle('Model Comparison Across Datasets', fontsize=14, fontweight='bold', y=1.02)
     
@@ -737,7 +694,6 @@ def generate_charts(df_results):
     plt.close()
     print(f"📊 Chart saved: benchmark_output/charts/overall_comparison.png")
     
-    # ── Chart 2: Per-dataset detailed ──
     for ds_name in df_results['Dataset'].unique():
         ds_data = df_results[df_results['Dataset'] == ds_name]
         
@@ -771,7 +727,6 @@ def generate_charts(df_results):
         plt.close()
         print(f"📊 Chart saved: benchmark_output/charts/{safe_name}_detail.png")
     
-    # ── Chart 3: Ablation — Under-forecast comparison ──
     fig, ax = plt.subplots(figsize=(8, 5))
     
     ablation_data = df_results[df_results['Model'].isin(['Hybrid', 'Hybrid (no asym.)'])]
@@ -791,9 +746,7 @@ def generate_charts(df_results):
     print(f"📊 Chart saved: benchmark_output/charts/ablation_asymmetric_loss.png")
 
 
-# ═══════════════════════════════════════════════════════════════
 #  RUN
-# ═══════════════════════════════════════════════════════════════
 
 if __name__ == '__main__':
     run_benchmark()

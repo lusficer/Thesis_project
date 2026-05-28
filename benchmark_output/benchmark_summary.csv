@@ -1,0 +1,21 @@
+Dataset,Model,MAE,RMSE,MAPE,Dir_Accuracy,Under_Forecast_Pct
+FMCG Sales 2023-24,Hybrid,24.58,31.12,50.03,51.65,93.18
+FMCG Sales 2023-24,Hybrid (no asym.),21.31,27.61,43.17,53.56,91.96
+FMCG Sales 2023-24,Prophet-Only,26.78,35.82,48.69,52.46,86.12
+FMCG Sales 2023-24,XGBoost-Only,13.87,19.3,31.49,55.62,54.84
+Favorita Ecuador,Hybrid,23977.64,32309.88,54.42,78.43,52.72
+Favorita Ecuador,Hybrid (no asym.),22554.39,30921.44,53.43,81.57,55.12
+Favorita Ecuador,Prophet-Only,20845.12,29418.88,47.33,87.41,58.56
+Favorita Ecuador,XGBoost-Only,21875.77,30885.72,52.27,85.84,79.3
+India Sales,Hybrid,3.77,5.34,95.45,55.56,35.17
+India Sales,Hybrid (no asym.),4.49,6.69,122.53,54.17,36.53
+India Sales,Prophet-Only,3.11,4.38,62.13,58.8,37.47
+India Sales,XGBoost-Only,4.08,6.8,108.3,46.76,42.47
+Retail Transactions,Hybrid,0.05,0.26,99.3,66.46,0.12
+Retail Transactions,Hybrid (no asym.),0.05,0.22,98.76,66.15,0.12
+Retail Transactions,Prophet-Only,0.04,0.2,98.86,71.41,0.12
+Retail Transactions,XGBoost-Only,0.01,0.21,100.0,94.61,0.12
+UK Retail,Hybrid,0.32,0.61,86.17,69.59,1.54
+UK Retail,Hybrid (no asym.),0.28,0.51,87.34,73.06,1.54
+UK Retail,Prophet-Only,42.91,114.99,72.42,67.7,1.08
+UK Retail,XGBoost-Only,0.1,0.46,100.0,82.24,1.54

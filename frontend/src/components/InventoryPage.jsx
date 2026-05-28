@@ -35,7 +35,6 @@ const fmtDt  = (s) => new Date(s).toLocaleString("en-US", { month: "short", day:
 const fmtMoney = (n) => n != null ? `$${Number(n).toFixed(2)}` : null;
 const productOptionLabel = (p) => `${p.name} (${p.sku}) — Stock: ${p.current_stock}`;
 
-// ─── Icons ──────────────────────────────────────────────────────────
 const I = {
   Plus:   () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
   Minus:  () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>,
@@ -78,7 +77,6 @@ export default function InventoryPage() {
 
   const [stockModalSearch, setStockModalSearch] = useState("");
 
-  // ── Import tab state ─────────────────────────────────────────────
   const [stagedFiles, setStagedFiles]       = useState([]);
   const [importing, setImporting]           = useState(false);
   const [importProgress, setImportProgress] = useState(null); // {step, pct, created, updated, total}
@@ -263,7 +261,6 @@ export default function InventoryPage() {
     }
   };
 
-  // ── Import: stage files without uploading yet ────────────────────
   const handleFileStage = (event) => {
     const newFiles = Array.from(event.target.files || []);
     if (!newFiles.length) return;
@@ -276,7 +273,6 @@ export default function InventoryPage() {
 
   const removeStagedFile = (name) => setStagedFiles(prev => prev.filter(f => f.name !== name));
 
-  // ── Run sales CSV import via BackgroundTask + SSE progress ────────
   const handleImportFile = async () => {
     if (!stagedFiles.length) return;
 
@@ -305,7 +301,6 @@ export default function InventoryPage() {
     setImportProgress({ step: "Uploading file(s)…", pct: 5 });
     const t0 = Date.now();
 
-    // ── Step 1: POST files → get job_id immediately ───────────────
     let jobId;
     try {
       const res = await salesAPI.import(stagedFiles);
@@ -325,7 +320,6 @@ export default function InventoryPage() {
       return;
     }
 
-    // ── Step 2: SSE stream for real-time progress ─────────────────
     const es = new EventSource(`${API_BASE_URL}/sales/import/${jobId}/progress`);
     esRef.current = es;
 
@@ -374,7 +368,6 @@ export default function InventoryPage() {
     };
   };
 
-  // ─── Render ──────────────────────────────────────────────────────
   return (
     <div style={S.page}>
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -413,7 +406,6 @@ export default function InventoryPage() {
           ))}
         </div>
 
-        {/* ─── Overview Tab ──────────────────────────────────────── */}
         {tab === "overview" && (
           <>
             <div style={{ ...S.card, marginBottom: 20, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
@@ -549,7 +541,6 @@ export default function InventoryPage() {
           </>
         )}
 
-        {/* ─── Transactions Tab ──────────────────────────────────── */}
         {tab === "transactions" && (
           <div style={S.card}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
@@ -622,7 +613,6 @@ export default function InventoryPage() {
           </div>
         )}
 
-        {/* ─── Alerts Tab ────────────────────────────────────────── */}
         {tab === "alerts" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {alerts.length === 0 && (
@@ -661,7 +651,6 @@ export default function InventoryPage() {
           </div>
         )}
 
-        {/* ─── Import Tab ────────────────────────────────────────── */}
         {tab === "import" && (
           <div style={{ ...S.card, maxWidth: 560 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 4 }}>
@@ -804,7 +793,6 @@ export default function InventoryPage() {
         )}
       </main>
 
-      {/* ─── Import Disclaimer Modal ───────────────────────────────── */}
       {importDisclaimerOpen && (
         <div style={S.overlay} onClick={() => setImportDisclaimerOpen(false)}>
           <div
@@ -836,7 +824,6 @@ export default function InventoryPage() {
         </div>
       )}
 
-      {/* ─── Stock In / Out Modal ─────────────────────────────────── */}
       {stockModal && (
         <div style={S.overlay} onClick={closeStockModal}>
           <div style={S.modal} onClick={e => e.stopPropagation()}>
@@ -894,7 +881,6 @@ export default function InventoryPage() {
                 <input type="number" value={stockForm.quantity} onChange={e => setStockForm(p => ({ ...p, quantity: e.target.value }))} placeholder="Enter quantity" style={S.input} min="1" />
               </div>
 
-              {/* ── Stock Out specific fields ── */}
               {stockModal === "out" && (
                 <>
                   {/* Reason selector */}
@@ -936,7 +922,6 @@ export default function InventoryPage() {
                 </>
               )}
 
-              {/* ── Stock In specific fields ── */}
               {stockModal === "in" && (
                 <>
                   <div>

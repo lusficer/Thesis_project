@@ -1,8 +1,6 @@
 """
-═══════════════════════════════════════════════════════════════
   DSSEngine — Inventory Management & Dynamic Pricing Logic
   Decision Support System for eCommerce optimization
-═══════════════════════════════════════════════════════════════
 """
 
 import numpy as np
@@ -16,7 +14,6 @@ class DSSEngine:
     - Dynamic pricing: Velocity-based pricing rules with guardrails
 
     analyze() return dict structure
-    ────────────────────────────────
     {
         "inventory_advice": {
             "action":               "ORDER_NOW" | "LOW_STOCK" | "HOLD",
@@ -64,9 +61,7 @@ class DSSEngine:
         self.SLOW_THRESHOLD  = 0.8
         self.VERY_SLOW       = 0.5
 
-    # ──────────────────────────────────────────────────────────────────
     # Public API
-    # ──────────────────────────────────────────────────────────────────
 
     def analyze(
         self,
@@ -90,13 +85,10 @@ class DSSEngine:
         -------
         dict — see class docstring for full schema
         """
-        # ══════════════════════════════════════════════════════════════
         # PART 1: INVENTORY ANALYSIS
-        # ══════════════════════════════════════════════════════════════
 
         forecast_values = forecast_df["yhat"].values
 
-        # ── 1.1 Forecast metrics ──────────────────────────────────────
         lead_slice = forecast_values[: self.lead_time]
         future_demand_7d       = float(np.sum(lead_slice))
         current_daily_velocity = float(np.mean(lead_slice)) if len(lead_slice) > 0 else 0.0
@@ -114,7 +106,6 @@ class DSSEngine:
             else float("inf")
         )
 
-        # ── 1.2 Stockout probability ──────────────────────────────────
         if demand_std > 0:
             z_score      = (current_stock - future_demand_7d) / (demand_std * np.sqrt(self.lead_time))
             stockout_prob = (1 - norm.cdf(z_score)) * 100
@@ -123,15 +114,12 @@ class DSSEngine:
 
         stockout_prob = float(np.clip(stockout_prob, 0, 100))
 
-        # ── 1.3 Safety stock (adaptive service level) ─────────────────
         target_risk = 0.02 if volatility_score > 0.5 else 0.05
         desired_z   = norm.ppf(1 - target_risk)
         safety_stock = float(max(0.0, desired_z * demand_std * np.sqrt(self.lead_time)))
 
-        # ── 1.4 Reorder point ─────────────────────────────────────────
         reorder_point = float(max(0.0, future_demand_7d + safety_stock))
 
-        # ── 1.5 Action recommendation ─────────────────────────────────
         if current_stock < reorder_point:
             inv_action   = "ORDER_NOW"
             qty_to_order = int(np.ceil(reorder_point - current_stock))
@@ -161,11 +149,8 @@ class DSSEngine:
             "volatility_score":       round(volatility_score, 2),
         }
 
-        # ══════════════════════════════════════════════════════════════
         # PART 2: DYNAMIC PRICING
-        # ══════════════════════════════════════════════════════════════
 
-        # ── 2.1 Velocity metrics ──────────────────────────────────────
         target_velocity = (
             current_stock / target_days_to_sell if target_days_to_sell > 0 else 0.0
         )
@@ -174,7 +159,6 @@ class DSSEngine:
             actual_velocity / target_velocity if target_velocity > 0 else 1.0
         )
 
-        # ── 2.2 Velocity-based pricing rules ──────────────────────────
         price_change_pct = 0.0
         reason           = "Velocity within normal range"
 
@@ -192,13 +176,11 @@ class DSSEngine:
                 price_change_pct = -4.0
                 reason = f"Low velocity ({velocity_ratio:.1f}x target)"
 
-        # ── 2.3 Scarcity premium override ─────────────────────────────
         guardrail_note = None
         if stockout_prob > 80 and price_change_pct < 10:
             price_change_pct = 10.0
             reason = "Critical scarcity detected (stockout risk > 80%)"
 
-        # ── 2.4 Guardrails ±30 % ─────────────────────────────────────
         raw_suggested = current_price * (1 + price_change_pct / 100)
         min_price     = current_price * 0.70
         max_price     = current_price * 1.30
@@ -230,7 +212,6 @@ class DSSEngine:
             "guardrail_note":  guardrail_note,
         }
 
-        # ── Narrative ─────────────────────────────────────────────────
         ai_narrative = self._generate_simple_narrative(inventory_advice, pricing_advice)
 
         return {
@@ -239,9 +220,7 @@ class DSSEngine:
             "ai_narrative":     ai_narrative,
         }
 
-    # ──────────────────────────────────────────────────────────────────
     # Private helpers
-    # ──────────────────────────────────────────────────────────────────
 
     @staticmethod
     def _generate_simple_narrative(inv_advice: dict, price_advice: dict) -> str:
@@ -252,17 +231,17 @@ class DSSEngine:
 
         if action == "ORDER_NOW":
             lines.append(
-                f"URGENT: Stockout risk at {stockout:.1f}%. "
+                f"⚠️ URGENT: Stockout risk at {stockout:.1f}%. "
                 f"Reorder {inv_advice['suggested_order_qty']} units immediately."
             )
         elif action == "LOW_STOCK":
             lines.append(
-                f"LOW STOCK: Stockout risk at {stockout:.1f}%. "
+                f"⚠️ LOW STOCK: Stockout risk at {stockout:.1f}%. "
                 f"Consider ordering {inv_advice['suggested_order_qty']} units."
             )
         else:
             lines.append(
-                f"STOCK OK: Stockout risk at {stockout:.1f}%. No immediate action needed."
+                f"✅ STOCK OK: Stockout risk at {stockout:.1f}%. No immediate action needed."
             )
 
         if abs(price_change) > 0.5:
